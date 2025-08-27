@@ -6,21 +6,90 @@ public class Ctrl_Main : MonoBehaviour
 {
     [SerializeField] private Transform studioDataTable;
     [SerializeField] private StudioDataView studioDataViewPrefab;
+    private List<StudioDataView> studioDataViews = new List<StudioDataView>();
+
     [SerializeField] private Transform editorDataTable;
     [SerializeField] private EditorDataView editorDataViewPrefab;
 
+    private List<EditorDataView> editorDataViews = new List<EditorDataView>();
     private void Start()
     {
-        for (int i = 0; i < studioDataSamples.Length; i++)
+        //for (int i = 0; i < studioDataSamples.Length; i++)
+        //{
+        //    StudioDataView studioDataView = GameObject.Instantiate<StudioDataView>(studioDataViewPrefab, studioDataTable);
+        //    studioDataView.Activate(studioDataSamples[i]);
+        //}
+
+        //for (int i = 0; i < editorDataSamples.Length; i++)
+        //{
+        //    EditorDataView editorDataView = GameObject.Instantiate<EditorDataView>(editorDataViewPrefab, editorDataTable);
+        //    editorDataView.Activate(editorDataSamples[i]);
+        //}
+    }
+    public DatabaseManager dm;
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.A))
         {
-            StudioDataView studioDataView = GameObject.Instantiate<StudioDataView>(studioDataViewPrefab, studioDataTable);
-            studioDataView.Activate(studioDataSamples[i]);
+            int pw = Random.Range(0, 10000);
+            for (int i = 0; i < 9; i++)
+            {
+                StudioDataSample sds = new StudioDataSample();
+                sds.id = pw + i;
+                sds.textureRaw = System.IO.File.ReadAllBytes("C:/Users/dltjr/Desktop/»õ Æú´õ (2)/" + (i+1) + ".jpeg");
+                dm.AddStudioData(sds, out string sResult);
+
+
+                EditorDataSample eds = new EditorDataSample();
+                eds.id = 0;
+                eds.password = sds.id;
+                eds.isDisplayed = false;
+
+                Texture2D tex = new Texture2D(0, 0, TextureFormat.ARGB32, false);
+                tex.LoadImage(sds.textureRaw);
+
+                eds.texture = tex;
+                dm.AddEditorData(eds, out sResult);
+            }
         }
 
-        for (int i = 0; i < editorDataSamples.Length; i++)
+        if (Input.GetKeyDown(KeyCode.S))
         {
-            EditorDataView editorDataView = GameObject.Instantiate<EditorDataView>(editorDataViewPrefab, editorDataTable);
-            editorDataView.Activate(editorDataSamples[i]);
+            List<StudioData> sds = dm.GetStudioData("SELECT id, register_datetime FROM TB_STUDIO ORDER BY id ASC");
+
+            int newCount = studioDataViews.Count - sds.Count;
+
+            for (int i = 0; i < sds.Count; i++)
+            {
+                if (i < studioDataViews.Count)
+                {
+                    studioDataViews[i].Activate(sds[i]);
+                }
+                else
+                {
+                    StudioDataView studioDataView = GameObject.Instantiate<StudioDataView>(studioDataViewPrefab, studioDataTable);
+                    studioDataView.Activate(sds[i]);
+
+                    studioDataViews.Add(studioDataView);
+                }
+            }
+
+            List<EditorData> eds = dm.GetEditorData("SELECT password, register_datetime, display_datetime FROM TB_EDITOR ORDER BY id ASC");
+
+            for (int i = 0; i < eds.Count; i++)
+            {
+                if (i < editorDataViews.Count)
+                {
+                    editorDataViews[i].Activate(eds[i]);
+                }
+                else
+                {
+                    EditorDataView editorDataView = GameObject.Instantiate<EditorDataView>(editorDataViewPrefab, editorDataTable);
+                    editorDataView.Activate(eds[i]);
+
+                    editorDataViews.Add(editorDataView);
+                }
+            }
         }
     }
 
