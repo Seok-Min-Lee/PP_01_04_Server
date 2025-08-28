@@ -57,39 +57,67 @@ public class Ctrl_Main : MonoBehaviour
         {
             List<StudioData> sds = dm.GetStudioData("SELECT id, register_datetime FROM TB_STUDIO ORDER BY id ASC");
 
-            int newCount = studioDataViews.Count - sds.Count;
+            int diff = studioDataViews.Count - sds.Count;
+            if (diff < 0)
+            {
+                for (int i = 0; i < -diff; i++)
+                {
+                    StudioDataView studioDataView = GameObject.Instantiate<StudioDataView>(studioDataViewPrefab, studioDataTable);
+                    studioDataViews.Add(studioDataView);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < diff; i++)
+                {
+                    studioDataViews[studioDataViews.Count - i - 1].gameObject.SetActive(false);
+                }
+            }
 
             for (int i = 0; i < sds.Count; i++)
             {
-                if (i < studioDataViews.Count)
-                {
-                    studioDataViews[i].Activate(sds[i]);
-                }
-                else
-                {
-                    StudioDataView studioDataView = GameObject.Instantiate<StudioDataView>(studioDataViewPrefab, studioDataTable);
-                    studioDataView.Activate(sds[i]);
-
-                    studioDataViews.Add(studioDataView);
-                }
+                studioDataViews[i].Activate(sds[i]);
+                studioDataViews[i].gameObject.SetActive(true);
             }
 
             List<EditorData> eds = dm.GetEditorData("SELECT password, register_datetime, display_datetime FROM TB_EDITOR ORDER BY id ASC");
 
-            for (int i = 0; i < eds.Count; i++)
+            diff = editorDataViews.Count - eds.Count;
+            if (diff < 0)
             {
-                if (i < editorDataViews.Count)
-                {
-                    editorDataViews[i].Activate(eds[i]);
-                }
-                else
+                for (int i = 0; i < -diff; i++)
                 {
                     EditorDataView editorDataView = GameObject.Instantiate<EditorDataView>(editorDataViewPrefab, editorDataTable);
-                    editorDataView.Activate(eds[i]);
-
                     editorDataViews.Add(editorDataView);
                 }
             }
+            else
+            {
+                for (int i = 0; i < diff; i++)
+                {
+                    editorDataViews[editorDataViews.Count - i - 1].gameObject.SetActive(false);
+                }
+            }
+
+            for (int i = 0; i < eds.Count; i++)
+            {
+                editorDataViews[i].Activate(eds[i]);
+                editorDataViews[i].gameObject.SetActive(true);
+            }
+            //for (int i = 0; i < eds.Count; i++)
+            //{
+            //    if (i < editorDataViews.Count)
+            //    {
+            //        editorDataViews[i].Activate(eds[i]);
+            //    }
+            //    else
+            //    {
+            //        EditorDataView editorDataView = GameObject.Instantiate<EditorDataView>(editorDataViewPrefab, editorDataTable);
+            //        editorDataView.Activate(eds[i]);
+
+            //        editorDataViews.Add(editorDataView);
+            //    }
+            //}
         }
     }
 
