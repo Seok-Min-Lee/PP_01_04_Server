@@ -10,21 +10,10 @@ public class Ctrl_Main : MonoBehaviour
 
     [SerializeField] private Transform editorDataTable;
     [SerializeField] private EditorDataView editorDataViewPrefab;
-
     private List<EditorDataView> editorDataViews = new List<EditorDataView>();
+
     private void Start()
     {
-        //for (int i = 0; i < studioDataSamples.Length; i++)
-        //{
-        //    StudioDataView studioDataView = GameObject.Instantiate<StudioDataView>(studioDataViewPrefab, studioDataTable);
-        //    studioDataView.Activate(studioDataSamples[i]);
-        //}
-
-        //for (int i = 0; i < editorDataSamples.Length; i++)
-        //{
-        //    EditorDataView editorDataView = GameObject.Instantiate<EditorDataView>(editorDataViewPrefab, editorDataTable);
-        //    editorDataView.Activate(editorDataSamples[i]);
-        //}
     }
     public DatabaseManager dm;
     private void Update()
@@ -104,20 +93,6 @@ public class Ctrl_Main : MonoBehaviour
                 editorDataViews[i].Activate(eds[i]);
                 editorDataViews[i].gameObject.SetActive(true);
             }
-            //for (int i = 0; i < eds.Count; i++)
-            //{
-            //    if (i < editorDataViews.Count)
-            //    {
-            //        editorDataViews[i].Activate(eds[i]);
-            //    }
-            //    else
-            //    {
-            //        EditorDataView editorDataView = GameObject.Instantiate<EditorDataView>(editorDataViewPrefab, editorDataTable);
-            //        editorDataView.Activate(eds[i]);
-
-            //        editorDataViews.Add(editorDataView);
-            //    }
-            //}
         }
     }
 
