@@ -85,11 +85,12 @@ public class Server : MonoSingleton<Server>
         byte[] commandBytes = BitConverter.GetBytes(command);
         Array.Copy(commandBytes, 0, messages, 0, 4);
 
-        int password = UnityEngine.Random.Range(0, 10000);
+        int password = DatabaseManager.instance.GetAvailablePassword();
         byte[] passwordBytes = BitConverter.GetBytes(password);
         Array.Copy(passwordBytes, 0, messages, 4, 4);
 
         server.Send(connectionId, messages);
+        Debug.Log("Response Password");
     }
 
     public void ResponseStudioData(int connectionId, ref byte[] message)
@@ -118,5 +119,6 @@ public class Server : MonoSingleton<Server>
         messages.AddRange(BitConverter.GetBytes(bResult));
 
         server.Send(connectionId, messages.ToArray());
+        Debug.Log("Response Add Studio Data Result");
     }
 }

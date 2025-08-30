@@ -3,14 +3,38 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using UnityEngine;
 
 public class DatabaseManager : Singleton<DatabaseManager>
 {
-    public Dictionary<int, int> passwordDictionary = new Dictionary<int, int>();
+    public List<StudioData> StudioDataList
+    {
+        get
+        {
+            return studioDataList;
+        }
+    }
+    public List<EditorData> EditorDataList
+    {
+        get
+        {
+            return editorDataList;
+        }
+    }
+    private Dictionary<int, int> passwordDictionary = new Dictionary<int, int>();
+    private List<StudioData> studioDataList = new List<StudioData>();
+    private List<EditorData> editorDataList = new List<EditorData>();
 
     private SqliteConnection conn;
     private string connectionStr { get { return "URI=file:" + Application.streamingAssetsPath + "/db_PP_01.db"; } }
+    public void Refresh()
+    {
+        studioDataList = GetStudioData();
+        editorDataList = GetEditorData();
+
+        passwordDictionary = studioDataList.Select(x => x.password).ToDictionary(k => k, v => v);
+    }
     public List<StudioData> GetStudioData()
     {
         List<StudioData> views = new List<StudioData>();
@@ -21,18 +45,18 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
             using (IDbCommand cmd = conn.CreateCommand())
             {
-                cmd.CommandText = "SELECT id, password, register_datetime FROM TB_STUDIO ORDER BY id ASC";
+                cmd.CommandText = "SELECT password, register_datetime FROM TB_STUDIO ORDER BY id ASC";
 
                 using (IDataReader reader = cmd.ExecuteReader())
                 {
+                    int index = 1;
                     while (reader.Read())
                     {
-                        int index = reader.GetInt32(0);
-                        int password = reader.GetInt32(1);
-                        string registerDateTime = reader.GetString(2);
+                        int password = reader.GetInt32(0);
+                        string registerDateTime = reader.GetString(1);
 
                         views.Add(new StudioData(
-                            index: index,
+                            index: index++,
                             password: password,
                             registerDateTime: registerDateTime
                         ));
@@ -126,9 +150,9 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
                 string query =
                     "INSERT INTO " +
-                        "TB_EDITOR (password, filterNo, isDisplayed, texture, register_datetime) " +
+                        "TB_EDITOR (password, filterNo, isDisplayed, texture, register_datetime, display_datetime) " +
                     "VALUES " +
-                        "(@password, @filterNo, @isDisplayed, @texture, @register_datetime)";
+                        "(@password, @filterNo, @isDisplayed, @texture, @register_datetime, @display_datetime)";
 
                 using (SqliteCommand cmd = new SqliteCommand(query, conn))
                 {
@@ -137,7 +161,7 @@ public class DatabaseManager : Singleton<DatabaseManager>
                     cmd.Parameters.AddWithValue("@isDisplayed", false);
                     cmd.Parameters.AddWithValue("@texture", texture);
                     cmd.Parameters.AddWithValue("@register_datetime", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-                    //cmd.Parameters.AddWithValue("@display_datetime", "-");
+                    cmd.Parameters.AddWithValue("@display_datetime", "-");
 
                     cmd.ExecuteNonQuery();
                 }
@@ -153,5 +177,22 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
         sResult = string.Empty;
         return true;
+    }
+    public int GetAvailablePassword()
+    {
+        int password;
+
+        while (true)
+        {
+            password = UnityEngine.Random.Range(0, 10000);
+
+            if (!passwordDictionary.ContainsKey(password))
+            {
+                passwordDictionary.Add(password, password);
+                break;
+            }
+        }
+
+        return password;
     }
 }
