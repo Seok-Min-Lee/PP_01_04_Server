@@ -105,9 +105,10 @@ public class Server : MonoSingleton<Server>
         byte[] textureByte = new byte[length];
         Array.Copy(message, 12, textureByte, 0, length);
 
-        StudioDataSample sds = new StudioDataSample();
-        sds.id = password;
-        sds.textureRaw = textureByte;
-        DatabaseManager.instance.AddStudioData(sds, out string sResult);
+        DatabaseManager.instance.AddStudioData(
+            password: password, 
+            texture: textureByte, 
+            sResult: out string sResult
+        );
     }
 }

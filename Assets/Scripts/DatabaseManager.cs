@@ -11,7 +11,7 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
     private SqliteConnection conn;
     private string connectionStr { get { return "URI=file:" + Application.streamingAssetsPath + "/db_PP_01.db"; } }
-    public List<StudioData> GetStudioData(string query)
+    public List<StudioData> GetStudioData()
     {
         List<StudioData> views = new List<StudioData>();
 
@@ -21,18 +21,18 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
             using (IDbCommand cmd = conn.CreateCommand())
             {
-                cmd.CommandText = query;
+                cmd.CommandText = "SELECT id, password, register_datetime FROM TB_STUDIO ORDER BY id ASC";
 
                 using (IDataReader reader = cmd.ExecuteReader())
                 {
-                    int index = 1;
                     while (reader.Read())
                     {
-                        int password = reader.GetInt32(0);
-                        string registerDateTime = reader.GetString(1);
+                        int index = reader.GetInt32(0);
+                        int password = reader.GetInt32(1);
+                        string registerDateTime = reader.GetString(2);
 
                         views.Add(new StudioData(
-                            index: index++,
+                            index: index,
                             password: password,
                             registerDateTime: registerDateTime
                         ));
@@ -45,7 +45,7 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
         return views;
     }
-    public List<EditorData> GetEditorData(string query)
+    public List<EditorData> GetEditorData()
     {
         List<EditorData> views = new List<EditorData>();
 
@@ -55,7 +55,7 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
             using (IDbCommand cmd = conn.CreateCommand())
             {
-                cmd.CommandText = query;
+                cmd.CommandText = "SELECT password, register_datetime, display_datetime FROM TB_EDITOR ORDER BY id ASC";
 
                 using (IDataReader reader = cmd.ExecuteReader())
                 {
@@ -81,7 +81,7 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
         return views;
     }
-    public bool AddStudioData(StudioDataSample sample, out string sResult)
+    public bool AddStudioData(int password, byte[] texture, out string sResult)
     {
         try
         {
@@ -91,14 +91,14 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
                 string query =
                     "INSERT INTO " +
-                        "TB_STUDIO (id, texture, register_datetime) " +
+                        "TB_STUDIO (password, texture, register_datetime) " +
                     "VALUES " +
-                        "(@id, @texture, @register_datetime)";
+                        "(@password, @texture, @register_datetime)";
 
                 using (SqliteCommand cmd = new SqliteCommand(query, conn))
                 {
-                    cmd.Parameters.AddWithValue("@id", sample.id);
-                    cmd.Parameters.AddWithValue("@texture", sample.textureRaw);
+                    cmd.Parameters.AddWithValue("@password", password);
+                    cmd.Parameters.AddWithValue("@texture", texture);
                     cmd.Parameters.AddWithValue("@register_datetime", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
 
                     cmd.ExecuteNonQuery();
@@ -116,7 +116,7 @@ public class DatabaseManager : Singleton<DatabaseManager>
         sResult = string.Empty;
         return true;
     }
-    public bool AddEditorData(EditorDataSample sample, out string sResult)
+    public bool AddEditorData(int password, int filterNo, byte[] texture, out string sResult)
     {
         try
         {
@@ -126,18 +126,18 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
                 string query =
                     "INSERT INTO " +
-                        "TB_EDITOR (password, filterNo, isDisplayed, texture, register_datetime, display_datetime) " +
+                        "TB_EDITOR (password, filterNo, isDisplayed, texture, register_datetime) " +
                     "VALUES " +
-                        "(@password, @filterNo, @isDisplayed, @texture, @register_datetime, @display_datetime)";
+                        "(@password, @filterNo, @isDisplayed, @texture, @register_datetime)";
 
                 using (SqliteCommand cmd = new SqliteCommand(query, conn))
                 {
-                    cmd.Parameters.AddWithValue("@password", sample.password);
-                    cmd.Parameters.AddWithValue("@filterNo", sample.filterNo);
+                    cmd.Parameters.AddWithValue("@password", password);
+                    cmd.Parameters.AddWithValue("@filterNo", filterNo);
                     cmd.Parameters.AddWithValue("@isDisplayed", false);
-                    cmd.Parameters.AddWithValue("@texture", sample.texture.EncodeToPNG());
+                    cmd.Parameters.AddWithValue("@texture", texture);
                     cmd.Parameters.AddWithValue("@register_datetime", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-                    cmd.Parameters.AddWithValue("@display_datetime", "-");
+                    //cmd.Parameters.AddWithValue("@display_datetime", "-");
 
                     cmd.ExecuteNonQuery();
                 }

@@ -23,27 +23,27 @@ public class Ctrl_Main : MonoBehaviour
             int pw = Random.Range(0, 10000);
             for (int i = 0; i < 9; i++)
             {
-                StudioDataSample sds = new StudioDataSample();
-                sds.id = pw + i;
-                sds.textureRaw = System.IO.File.ReadAllBytes("C:/Users/dltjr/Desktop/새 폴더 (2)/" + (i+1) + ".jpeg");
-                DatabaseManager.instance.AddStudioData(sds, out string sResult);
+                int password = pw + i;
+                byte[] texture = System.IO.File.ReadAllBytes("C:/Users/dltjr/Desktop/새 폴더 (2)/" + (i + 1) + ".jpeg");
 
-                EditorDataSample eds = new EditorDataSample();
-                eds.id = 0;
-                eds.password = sds.id;
-                eds.isDisplayed = false;
+                DatabaseManager.instance.AddStudioData(
+                    password: password, 
+                    texture: texture, 
+                    sResult: out string sResult
+                );
 
-                Texture2D tex = new Texture2D(0, 0, TextureFormat.ARGB32, false);
-                tex.LoadImage(sds.textureRaw);
-
-                eds.texture = tex;
-                DatabaseManager.instance.AddEditorData(eds, out sResult);
+                DatabaseManager.instance.AddEditorData(
+                    password: password, 
+                    filterNo: 0, 
+                    texture: texture, 
+                    sResult: out sResult
+                );
             }
         }
 
         if (Input.GetKeyDown(KeyCode.S))
         {
-            List<StudioData> sds = DatabaseManager.instance.GetStudioData("SELECT id, register_datetime FROM TB_STUDIO ORDER BY id ASC");
+            List<StudioData> sds = DatabaseManager.instance.GetStudioData();
 
             int diff = studioDataViews.Count - sds.Count;
             if (diff < 0)
@@ -68,7 +68,7 @@ public class Ctrl_Main : MonoBehaviour
                 studioDataViews[i].gameObject.SetActive(true);
             }
 
-            List<EditorData> eds = DatabaseManager.instance.GetEditorData("SELECT password, register_datetime, display_datetime FROM TB_EDITOR ORDER BY id ASC");
+            List<EditorData> eds = DatabaseManager.instance.GetEditorData();
 
             diff = editorDataViews.Count - eds.Count;
             if (diff < 0)
