@@ -5,13 +5,11 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 
-public class Server : MonoBehaviour
+public class Server : MonoSingleton<Server>
 {
     private Telepathy.Server server = new Telepathy.Server(1920 * 1080 + 1024);
     private void Awake()
     {
-        DontDestroyOnLoad(gameObject);
-
         // update even if window isn't focused, otherwise we don't receive.
         Application.runInBackground = true;
 
@@ -21,7 +19,6 @@ public class Server : MonoBehaviour
         Telepathy.Log.Error = Debug.LogError;
 
         server.OnConnected = (connectionId) => Debug.Log(connectionId + " Connected");
-        //server.OnData = (connectionId, message) => Debug.Log(connectionId + " Data: " + BitConverter.ToString(message.Array, message.Offset, message.Count));
         server.OnData = (connectionId, message) => ReceiveMessage(connectionId, message);
         server.OnDisconnected = (connectionId) => Debug.Log(connectionId + " Disconnected");
     }
@@ -69,10 +66,10 @@ public class Server : MonoBehaviour
 
         switch (command)
         {
-            case 1000:
-                ResponsePassword();
+            case ConstantValues.CMD_REQUEST_PASSWORD:
+                ResponsePassword(connectionId);
                 break;
-            case 1002:
+            case ConstantValues.CMD_SEND_STUDIO_DATA:
                 ReceiveStudioData(ref messageBytes);
                 break;
             default:
@@ -80,11 +77,11 @@ public class Server : MonoBehaviour
         }
     }
 
-    public void ResponsePassword()
+    public void ResponsePassword(int connectionId)
     {
         byte[] messages = new byte[8];
 
-        int command = 1001;
+        int command = ConstantValues.CMD_RESPONSE_PASSWORD;
         byte[] commandBytes = BitConverter.GetBytes(command);
         Array.Copy(commandBytes, 0, messages, 0, 4);
 
@@ -92,9 +89,7 @@ public class Server : MonoBehaviour
         byte[] passwordBytes = BitConverter.GetBytes(password);
         Array.Copy(passwordBytes, 0, messages, 4, 4);
 
-        server.Send(1, messages);
-
-        Debug.Log("ResponsePassword");
+        server.Send(connectionId, messages);
     }
 
     public void ReceiveStudioData(ref byte[] message)
@@ -113,8 +108,6 @@ public class Server : MonoBehaviour
         StudioDataSample sds = new StudioDataSample();
         sds.id = password;
         sds.textureRaw = textureByte;
-        GameObject.Find("db").GetComponent<DatabaseManager>().AddStudioData(sds, out string sResult);
-
-        Debug.Log("ReceiveStudioData");
+        DatabaseManager.instance.AddStudioData(sds, out string sResult);
     }
 }

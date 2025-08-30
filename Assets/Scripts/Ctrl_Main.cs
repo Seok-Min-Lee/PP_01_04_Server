@@ -14,8 +14,8 @@ public class Ctrl_Main : MonoBehaviour
 
     private void Start()
     {
+        Debug.Log("Server is Available? " + (Server.Instance != null));
     }
-    public DatabaseManager dm;
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.A))
@@ -26,8 +26,7 @@ public class Ctrl_Main : MonoBehaviour
                 StudioDataSample sds = new StudioDataSample();
                 sds.id = pw + i;
                 sds.textureRaw = System.IO.File.ReadAllBytes("C:/Users/dltjr/Desktop/»õ Æú´õ (2)/" + (i+1) + ".jpeg");
-                dm.AddStudioData(sds, out string sResult);
-
+                DatabaseManager.instance.AddStudioData(sds, out string sResult);
 
                 EditorDataSample eds = new EditorDataSample();
                 eds.id = 0;
@@ -38,13 +37,13 @@ public class Ctrl_Main : MonoBehaviour
                 tex.LoadImage(sds.textureRaw);
 
                 eds.texture = tex;
-                dm.AddEditorData(eds, out sResult);
+                DatabaseManager.instance.AddEditorData(eds, out sResult);
             }
         }
 
         if (Input.GetKeyDown(KeyCode.S))
         {
-            List<StudioData> sds = dm.GetStudioData("SELECT id, register_datetime FROM TB_STUDIO ORDER BY id ASC");
+            List<StudioData> sds = DatabaseManager.instance.GetStudioData("SELECT id, register_datetime FROM TB_STUDIO ORDER BY id ASC");
 
             int diff = studioDataViews.Count - sds.Count;
             if (diff < 0)
@@ -69,7 +68,7 @@ public class Ctrl_Main : MonoBehaviour
                 studioDataViews[i].gameObject.SetActive(true);
             }
 
-            List<EditorData> eds = dm.GetEditorData("SELECT password, register_datetime, display_datetime FROM TB_EDITOR ORDER BY id ASC");
+            List<EditorData> eds = DatabaseManager.instance.GetEditorData("SELECT password, register_datetime, display_datetime FROM TB_EDITOR ORDER BY id ASC");
 
             diff = editorDataViews.Count - eds.Count;
             if (diff < 0)

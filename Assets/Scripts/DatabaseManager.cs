@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Data;
 using UnityEngine;
 
-public class DatabaseManager : MonoBehaviour
+public class DatabaseManager : Singleton<DatabaseManager>
 {
     public Dictionary<int, int> passwordDictionary = new Dictionary<int, int>();
 
