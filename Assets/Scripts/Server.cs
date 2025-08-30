@@ -69,8 +69,8 @@ public class Server : MonoSingleton<Server>
             case ConstantValues.CMD_REQUEST_PASSWORD:
                 ResponsePassword(connectionId);
                 break;
-            case ConstantValues.CMD_SEND_STUDIO_DATA:
-                ReceiveStudioData(ref messageBytes);
+            case ConstantValues.CMD_REQUEST_ADD_STUDIO_DATA:
+                ResponseStudioData(connectionId, ref messageBytes);
                 break;
             default:
                 break;
@@ -92,8 +92,9 @@ public class Server : MonoSingleton<Server>
         server.Send(connectionId, messages);
     }
 
-    public void ReceiveStudioData(ref byte[] message)
+    public void ResponseStudioData(int connectionId, ref byte[] message)
     {
+        // Receive Studio Data
         byte[] passwordBytes = new byte[4];
         Array.Copy(message, 4, passwordBytes, 0, 4);
         int password = BitConverter.ToInt32(passwordBytes);
@@ -105,10 +106,17 @@ public class Server : MonoSingleton<Server>
         byte[] textureByte = new byte[length];
         Array.Copy(message, 12, textureByte, 0, length);
 
-        DatabaseManager.instance.AddStudioData(
+        bool bResult = DatabaseManager.instance.AddStudioData(
             password: password, 
             texture: textureByte, 
             sResult: out string sResult
         );
+
+        // Response Result
+        List<byte> messages = new List<byte>();
+        messages.AddRange(BitConverter.GetBytes(ConstantValues.CMD_RESPONSE_ADD_STUDIO_DATA_RESULT));
+        messages.AddRange(BitConverter.GetBytes(bResult));
+
+        server.Send(connectionId, messages.ToArray());
     }
 }
