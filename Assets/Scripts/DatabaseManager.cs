@@ -195,4 +195,8 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
         return password;
     }
+    public bool IsRightPassword(int password)
+    {
+        return passwordDictionary.ContainsKey(password);
+    }
 }

@@ -72,6 +72,15 @@ public class Server : MonoSingleton<Server>
             case ConstantValues.CMD_REQUEST_ADD_STUDIO_DATA:
                 ResponseStudioData(connectionId, ref messageBytes);
                 break;
+            case ConstantValues.CMD_REQUEST_CHECK_PASSWORD:
+                ResponseCheckPassword(connectionId, ref messageBytes);
+                break;
+            case ConstantValues.CMD_REQUEST_GET_STUDIO_DATA:
+                ResponseGetStudioData(connectionId, ref messageBytes);
+                break;
+            case ConstantValues.CMD_REQUEST_ADD_EDITOR_DATA:
+                ResponseAddEditorData(connectionId, ref messageBytes);
+                break;
             default:
                 break;
         }
@@ -92,7 +101,6 @@ public class Server : MonoSingleton<Server>
         server.Send(connectionId, messages);
         Debug.Log("Response Password");
     }
-
     public void ResponseStudioData(int connectionId, ref byte[] message)
     {
         // Receive Studio Data
@@ -120,5 +128,40 @@ public class Server : MonoSingleton<Server>
 
         server.Send(connectionId, messages.ToArray());
         Debug.Log("Response Add Studio Data Result");
+    }
+    private void ResponseCheckPassword(int connectionId, ref byte[] message)
+    {
+        byte[] bytes = new byte[4];
+        Array.Copy(message, 4, bytes, 0, 4);
+        int password = BitConverter.ToInt32(bytes);
+
+        List<byte> messages = new List<byte>();
+        messages.AddRange(BitConverter.GetBytes(ConstantValues.CMD_RESPONSE_CHECK_PASSWORD_RESULT));
+        messages.AddRange(BitConverter.GetBytes(DatabaseManager.instance.IsRightPassword(password)));
+
+        server.Send(connectionId, messages.ToArray());
+        Debug.Log("ResponseCheckPassword");
+    }
+    private void ResponseGetStudioData(int connectionId, ref byte[] message)
+    {
+        byte[] bytes = new byte[4];
+        Array.Copy(message, 4, bytes, 0, 4);
+
+        List<byte> messages = new List<byte>();
+        messages.AddRange(BitConverter.GetBytes(ConstantValues.CMD_RESPONSE_GET_STUDIO_DATA));
+
+        server.Send(connectionId, messages.ToArray());
+        Debug.Log("ResponseGetStudioData");
+    }
+    private void ResponseAddEditorData(int connectionId, ref byte[] message)
+    {
+        byte[] bytes = new byte[4];
+        Array.Copy(message, 4, bytes, 0, 4);
+
+        List<byte> messages = new List<byte>();
+        messages.AddRange(BitConverter.GetBytes(ConstantValues.CMD_RESPONSE_ADD_EDITOR_DATA));
+
+        server.Send(connectionId, messages.ToArray());
+        Debug.Log("ResponseAddEditorData");
     }
 }
