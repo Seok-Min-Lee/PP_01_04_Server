@@ -66,7 +66,7 @@ public class Server : MonoSingleton<Server>
 
         switch (command)
         {
-            case ConstantValues.CMD_REQUEST_PASSWORD:
+            case ConstantValues.CMD_REQUEST_GET_PASSWORD:
                 ResponsePassword(connectionId);
                 break;
             case ConstantValues.CMD_REQUEST_ADD_STUDIO_DATA:
@@ -81,7 +81,7 @@ public class Server : MonoSingleton<Server>
     {
         byte[] messages = new byte[8];
 
-        int command = ConstantValues.CMD_RESPONSE_PASSWORD;
+        int command = ConstantValues.CMD_RESPONSE_GET_PASSWORD;
         byte[] commandBytes = BitConverter.GetBytes(command);
         Array.Copy(commandBytes, 0, messages, 0, 4);
 
