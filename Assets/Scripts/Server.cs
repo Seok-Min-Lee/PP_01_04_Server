@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using UnityEngine;
@@ -61,16 +62,16 @@ public class Server : MonoSingleton<Server>
         }
 
         byte[] commandBytes = new byte[4];
-        Array.Copy(messageBytes, 0, commandBytes, 0, 4);
+        Buffer.BlockCopy(messageBytes, 0, commandBytes, 0, 4);
         int command = BitConverter.ToInt32(commandBytes);
 
         switch (command)
         {
             case ConstantValues.CMD_REQUEST_GET_PASSWORD:
-                ResponsePassword(connectionId);
+                ResponseGetPassword(connectionId);
                 break;
             case ConstantValues.CMD_REQUEST_ADD_STUDIO_DATA:
-                ResponseStudioData(connectionId, ref messageBytes);
+                ResponseAddStudioData(connectionId, ref messageBytes);
                 break;
             case ConstantValues.CMD_REQUEST_CHECK_PASSWORD:
                 ResponseCheckPassword(connectionId, ref messageBytes);
@@ -86,34 +87,34 @@ public class Server : MonoSingleton<Server>
         }
     }
 
-    public void ResponsePassword(int connectionId)
+    public void ResponseGetPassword(int connectionId)
     {
         byte[] messages = new byte[8];
 
         int command = ConstantValues.CMD_RESPONSE_GET_PASSWORD;
         byte[] commandBytes = BitConverter.GetBytes(command);
-        Array.Copy(commandBytes, 0, messages, 0, 4);
+        Buffer.BlockCopy(commandBytes, 0, messages, 0, 4);
 
         int password = DatabaseManager.instance.GetAvailablePassword();
         byte[] passwordBytes = BitConverter.GetBytes(password);
-        Array.Copy(passwordBytes, 0, messages, 4, 4);
+        Buffer.BlockCopy(passwordBytes, 0, messages, 4, 4);
 
         server.Send(connectionId, messages);
-        Debug.Log("Response Password");
+        Debug.Log($"Response Get Password::{connectionId}::{password}");
     }
-    public void ResponseStudioData(int connectionId, ref byte[] message)
+    public void ResponseAddStudioData(int connectionId, ref byte[] message)
     {
         // Receive Studio Data
         byte[] passwordBytes = new byte[4];
-        Array.Copy(message, 4, passwordBytes, 0, 4);
+        Buffer.BlockCopy(message, 4, passwordBytes, 0, 4);
         int password = BitConverter.ToInt32(passwordBytes);
 
         byte[] lengthBytes = new byte[4];
-        Array.Copy(message, 8, lengthBytes, 0, 4);
+        Buffer.BlockCopy(message, 8, lengthBytes, 0, 4);
         int length = BitConverter.ToInt32(lengthBytes);
 
         byte[] textureByte = new byte[length];
-        Array.Copy(message, 12, textureByte, 0, length);
+        Buffer.BlockCopy(message, 12, textureByte, 0, length);
 
         bool bResult = DatabaseManager.instance.AddStudioData(
             password: password, 
@@ -122,46 +123,67 @@ public class Server : MonoSingleton<Server>
         );
 
         // Response Result
-        List<byte> messages = new List<byte>();
-        messages.AddRange(BitConverter.GetBytes(ConstantValues.CMD_RESPONSE_ADD_STUDIO_DATA_RESULT));
-        messages.AddRange(BitConverter.GetBytes(bResult));
+        using (MemoryStream ms = new MemoryStream())
+        using (BinaryWriter bw = new BinaryWriter(ms))
+        {
+            bw.Write(ConstantValues.CMD_RESPONSE_ADD_STUDIO_DATA_RESULT);
+            bw.Write(bResult);
 
-        server.Send(connectionId, messages.ToArray());
-        Debug.Log("Response Add Studio Data Result");
+            server.Send(connectionId, ms.ToArray());
+        }
+
+        Debug.Log($"Response Add Studio Data Result::{connectionId}::{bResult}");
     }
     private void ResponseCheckPassword(int connectionId, ref byte[] message)
     {
-        byte[] bytes = new byte[4];
-        Array.Copy(message, 4, bytes, 0, 4);
-        int password = BitConverter.ToInt32(bytes);
+        byte[] passwordBytes = new byte[4];
+        Buffer.BlockCopy(message, 4, passwordBytes, 0, 4);
+        int password = BitConverter.ToInt32(passwordBytes);
 
-        List<byte> messages = new List<byte>();
-        messages.AddRange(BitConverter.GetBytes(ConstantValues.CMD_RESPONSE_CHECK_PASSWORD_RESULT));
-        messages.AddRange(BitConverter.GetBytes(DatabaseManager.instance.IsRightPassword(password)));
+        bool bResult = DatabaseManager.instance.IsRightPassword(password);
 
-        server.Send(connectionId, messages.ToArray());
-        Debug.Log("ResponseCheckPassword");
+        using (MemoryStream ms = new MemoryStream())
+        using (BinaryWriter bw = new BinaryWriter(ms))
+        {
+            bw.Write(ConstantValues.CMD_RESPONSE_CHECK_PASSWORD_RESULT);
+            bw.Write(bResult);
+
+            server.Send(connectionId, ms.ToArray());
+        }
+
+        Debug.Log($"Response Check Password::{connectionId}::{bResult}");
     }
     private void ResponseGetStudioData(int connectionId, ref byte[] message)
     {
         byte[] bytes = new byte[4];
-        Array.Copy(message, 4, bytes, 0, 4);
+        Buffer.BlockCopy(message, 4, bytes, 0, 4);
+        int password = BitConverter.ToInt32(bytes);
 
-        List<byte> messages = new List<byte>();
-        messages.AddRange(BitConverter.GetBytes(ConstantValues.CMD_RESPONSE_GET_STUDIO_DATA));
+        StudioDataRaw sdr = DatabaseManager.instance.GetStudioDataRaw(password);
 
-        server.Send(connectionId, messages.ToArray());
-        Debug.Log("ResponseGetStudioData");
+        using (MemoryStream ms = new MemoryStream())
+        using (BinaryWriter bw = new BinaryWriter(ms))
+        {
+            bw.Write(ConstantValues.CMD_RESPONSE_GET_STUDIO_DATA);
+            bw.Write(sdr.ToBytes());
+
+            server.Send(connectionId, ms.ToArray());
+        }
+        Debug.Log($"Response Get Studio Data::{connectionId}::{sdr.ToString()}");
     }
     private void ResponseAddEditorData(int connectionId, ref byte[] message)
     {
         byte[] bytes = new byte[4];
-        Array.Copy(message, 4, bytes, 0, 4);
+        Buffer.BlockCopy(message, 4, bytes, 0, 4);
 
-        List<byte> messages = new List<byte>();
-        messages.AddRange(BitConverter.GetBytes(ConstantValues.CMD_RESPONSE_ADD_EDITOR_DATA));
+        using (MemoryStream ms = new MemoryStream())
+        using (BinaryWriter bw = new BinaryWriter(ms))
+        {
+            bw.Write(ConstantValues.CMD_RESPONSE_ADD_EDITOR_DATA);
 
-        server.Send(connectionId, messages.ToArray());
-        Debug.Log("ResponseAddEditorData");
+            server.Send(connectionId, ms.ToArray());
+        }
+
+        Debug.Log($"Response Add Editor Data::{connectionId}");
     }
 }

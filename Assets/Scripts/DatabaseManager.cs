@@ -35,6 +35,42 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
         passwordDictionary = studioDataList.Select(x => x.password).ToDictionary(k => k, v => v);
     }
+    public StudioDataRaw GetStudioDataRaw(int password)
+    {
+        StudioDataRaw studioDataRaw = null;
+
+        using (conn = new SqliteConnection(connectionStr))
+        {
+            conn.Open();
+
+            using (IDbCommand cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = $"SELECT * FROM TB_STUDIO WHERE password = {password}";
+
+                using (IDataReader reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        int id = reader.GetInt32(0);
+                        //int password = reader.GetInt32(1);
+                        byte[] textureRaw = (byte[])reader["Texture"];
+                        string registerDateTime = reader.GetString(3);
+
+                        studioDataRaw = new StudioDataRaw(
+                            id: id, 
+                            password: password, 
+                            registerDateTime: registerDateTime, 
+                            textureRaw: textureRaw
+                        );
+                    }
+                }
+            }
+
+            conn.Close();
+        }
+
+        return studioDataRaw;
+    }
     public List<StudioData> GetStudioData()
     {
         List<StudioData> views = new List<StudioData>();
