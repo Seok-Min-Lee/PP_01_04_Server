@@ -36,13 +36,6 @@ public class Server : MonoSingleton<Server>
         {
             server.Start(45604);
         }
-
-        if (Input.GetKeyDown(KeyCode.A))
-        {
-            string str = "Message from Server";
-            byte[] bytes = Encoding.UTF8.GetBytes(str);
-            server.Send(1, bytes);
-        }
     }
 
     private void OnApplicationQuit()
@@ -173,17 +166,46 @@ public class Server : MonoSingleton<Server>
     }
     private void ResponseAddEditorData(int connectionId, ref byte[] message)
     {
-        byte[] bytes = new byte[4];
-        Buffer.BlockCopy(message, 4, bytes, 0, 4);
+        byte[] headerLengthBytes = new byte[4];
+        Buffer.BlockCopy(message, 4, headerLengthBytes, 0, 4);
+        int headerLength = BitConverter.ToInt32(headerLengthBytes);
+
+        byte[] headerBytes = new byte[headerLength];
+        Buffer.BlockCopy(message, 8, headerBytes, 0, headerLength);
+        string headerStr = Encoding.UTF8.GetString(headerBytes);
+
+        EditorDataRaw.Header header = JsonUtility.FromJson<EditorDataRaw.Header>(headerStr);
+
+        byte[] textureBytes = new byte[header.TextureLength];
+        Buffer.BlockCopy(message, 8 + headerLength, textureBytes, 0, header.TextureLength);
+
+        EditorDataRaw raw = new EditorDataRaw(
+            id: header.Id,
+            password: header.Password,
+            filterNo: header.FilterNo,
+            isDisplayed: header.IsDisplayed,
+            registerDateTime: header.RegisterDateTime,
+            displayDateTime: header.DisplayDateTime,
+            studioId: header.StudioId,
+            textureRaw: textureBytes
+        );
+
+        bool result = DatabaseManager.instance.AddEditorData(
+            password: raw.Password, 
+            filterNo: raw.FilterNo, 
+            texture: raw.Texture, 
+            sResult: out string sResult
+        );
 
         using (MemoryStream ms = new MemoryStream())
         using (BinaryWriter bw = new BinaryWriter(ms))
         {
             bw.Write(ConstantValues.CMD_RESPONSE_ADD_EDITOR_DATA);
+            bw.Write(result);
 
             server.Send(connectionId, ms.ToArray());
         }
 
-        Debug.Log($"Response Add Editor Data::{connectionId}");
+        Debug.Log($"Response Add Editor Data::{connectionId}::{result}");
     }
 }
