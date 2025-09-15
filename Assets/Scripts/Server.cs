@@ -30,7 +30,7 @@ public class Server : MonoSingleton<Server>
         {
             // tick to process messages
             // (even if not active so we still process disconnect messages)
-            server.Tick(10);
+            server.Tick(100);
         }
         else
         {
@@ -75,11 +75,19 @@ public class Server : MonoSingleton<Server>
             case ConstantValues.CMD_REQUEST_ADD_EDITOR_DATA:
                 ResponseAddEditorData(connectionId, ref messageBytes);
                 break;
+            case ConstantValues.CMD_REQUEST_GET_UNDISPLAYED_COUNT:
+                ResponseGetUndisplayedCount(connectionId, ref messageBytes);
+                break;
+            case ConstantValues.CMD_REQUEST_GET_EDITOR_DATA:
+                ResponseGetEditorData(connectionId, ref messageBytes);
+                break;
+            case ConstantValues.CMD_REQUEST_UPDATE_DISPLAY_STATE:
+                ResponseUpdateDisplayState(connectionId, ref messageBytes);
+                break;
             default:
                 break;
         }
     }
-
     public void ResponseGetPassword(int connectionId)
     {
         byte[] messages = new byte[8];
@@ -207,5 +215,55 @@ public class Server : MonoSingleton<Server>
         }
 
         Debug.Log($"Response Add Editor Data::{connectionId}::{result}");
+    }
+    private void ResponseGetUndisplayedCount(int connectionId, ref byte[] message)
+    {
+        int count = DatabaseManager.instance.GetUnDisplayedCount();
+
+        using (MemoryStream ms = new MemoryStream())
+        using (BinaryWriter bw = new BinaryWriter(ms))
+        {
+            bw.Write(ConstantValues.CMD_RESPONSE_GET_UNDISPLAYED_COUNT);
+            bw.Write(count);
+
+            server.Send(connectionId, ms.ToArray());
+        }
+
+        Debug.Log($"Response Get Undisplayed Count::{connectionId}::{count}");
+    }
+    private void ResponseGetEditorData(int connectionId, ref byte[] message)
+    {
+        EditorDataRaw edr = DatabaseManager.instance.GetEditorDataRaw();
+
+        using (MemoryStream ms = new MemoryStream())
+        using (BinaryWriter bw = new BinaryWriter(ms))
+        {
+            bw.Write(ConstantValues.CMD_RESPONSE_GET_EDITOR_DATA);
+            bw.Write(edr.ToBytes());
+
+            server.Send(connectionId, ms.ToArray());
+        }
+
+        Debug.Log($"Response Get Editor Data::{connectionId}::{edr}");
+    }
+    private void ResponseUpdateDisplayState(int connectionId, ref byte[] message)
+    {
+        byte[] idBytes = new byte[4];
+        Buffer.BlockCopy(message, 4, idBytes, 0, 4);
+        int id = BitConverter.ToInt32(idBytes);
+
+        bool result = DatabaseManager.instance.TryUpdateDisplayState(id, out string sResult);
+
+        using (MemoryStream ms = new MemoryStream())
+        using (BinaryWriter bw = new BinaryWriter(ms))
+        {
+            bw.Write(ConstantValues.CMD_RESPONSE_UPDATE_DISPLAY_STATE);
+            bw.Write(id);
+            bw.Write(result);
+
+            server.Send(connectionId, ms.ToArray());
+        }
+
+        Debug.Log($"Response Update Display State::{connectionId}::{id}::{result}");
     }
 }

@@ -71,6 +71,114 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
         return studioDataRaw;
     }
+    public EditorDataRaw GetEditorDataRaw()
+    {
+        EditorDataRaw raw = null;
+
+        using (conn = new SqliteConnection(connectionStr))
+        {
+            conn.Open();
+
+            using (IDbCommand cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = $"SELECT * FROM TB_EDITOR WHERE IsDisplayed = 0 ORDER BY id ASC LIMIT 1";
+
+                using (IDataReader reader = cmd.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        int id = reader.GetInt32(0);
+                        int password = reader.GetInt32(1);
+                        int filterNo = reader.GetInt32(2);
+                        //int isDisplayed = reader.GetInt32(3);
+                        bool isDisplayed = false;
+                        byte[] textureRaw = (byte[])reader["Texture"];
+                        string registerDateTime = reader.GetString(5);
+                        string displayDateTime = reader.GetString(5);
+                        int studioId = -1;
+
+                        raw = new EditorDataRaw(
+                            id: id,
+                            password: password, 
+                            filterNo: filterNo, 
+                            isDisplayed: isDisplayed,
+                            registerDateTime: registerDateTime, 
+                            displayDateTime: displayDateTime, 
+                            studioId: studioId,
+                            textureRaw: textureRaw
+                        );
+                    }
+                }
+            }
+
+            if (raw != null)
+            {
+                string query = $"UPDATE TB_EDITOR SET IsDisplayed = 1 WHERE id = {raw.Id}";
+
+                using (SqliteCommand cmd = new SqliteCommand(query, conn))
+                {
+                    cmd.ExecuteNonQuery();
+                }
+            }
+
+            conn.Close();
+        }
+
+        return raw;
+    }
+    public int GetUnDisplayedCount()
+    {
+        int count = 0;
+
+        using (conn = new SqliteConnection(connectionStr))
+        {
+            conn.Open();
+
+            using (IDbCommand cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = $"SELECT count(id) FROM TB_EDITOR WHERE IsDisplayed = 0";
+
+                using (IDataReader reader = cmd.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        count = reader.GetInt32(0);
+                    }
+                }
+            }
+
+            conn.Close();
+        }
+
+        return count;
+    }
+    public bool TryUpdateDisplayState(int id, out string sResult)
+    {
+        try
+        {
+            using (conn = new SqliteConnection(connectionStr))
+            {
+                conn.Open();
+
+                string query = $"UPDATE TB_EDITOR SET IsDisplayed = 2, Display_datetime = datetime('now', 'localtime') WHERE id = {id}";
+
+                using (SqliteCommand cmd = new SqliteCommand(query, conn))
+                {
+                    cmd.ExecuteNonQuery();
+                }
+
+                conn.Close();
+            }
+        }
+        catch (Exception e)
+        {
+            sResult = e.Message;
+            return false;
+        }
+
+        sResult = string.Empty;
+        return true;
+    }
     public List<StudioData> GetStudioData()
     {
         List<StudioData> views = new List<StudioData>();
