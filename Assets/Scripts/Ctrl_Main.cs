@@ -5,6 +5,8 @@ using UnityEngine;
 
 public class Ctrl_Main : MonoBehaviour
 {
+    [SerializeField] private DeviceMonitor[] deviceMonitors;
+
     [SerializeField] private Transform studioDataTable;
     [SerializeField] private StudioDataView studioDataViewPrefab;
     private List<StudioDataView> studioDataViews = new List<StudioDataView>();
@@ -16,6 +18,10 @@ public class Ctrl_Main : MonoBehaviour
     private void Start()
     {
         Debug.Log("Server is Available? " + (Server.Instance != null));
+
+        deviceMonitors[0].Init("Studio", "127.0.0.1");
+        deviceMonitors[1].Init("Editor", "127.0.0.1");
+        deviceMonitors[2].Init("Gallery", "127.0.0.1");
 
         RefreshView();
     }
@@ -30,6 +36,10 @@ public class Ctrl_Main : MonoBehaviour
         {
             RefreshView();
         }
+    }
+    public void RefreshDeviceMonitorLocal(int index, bool value)
+    {
+        deviceMonitors[index].UpdateConnection(value);
     }
     private void RefreshView()
     {

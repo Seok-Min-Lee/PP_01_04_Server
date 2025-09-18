@@ -9,6 +9,7 @@ using UnityEngine;
 public class Server : MonoSingleton<Server>
 {
     private Telepathy.Server server = new Telepathy.Server(1920 * 1080 + 1024);
+    private Dictionary<int, int> connectionIdMonitorIdDictionary = new Dictionary<int, int>();
     private void Awake()
     {
         // update even if window isn't focused, otherwise we don't receive.
@@ -19,9 +20,9 @@ public class Server : MonoSingleton<Server>
         Telepathy.Log.Warning = Debug.LogWarning;
         Telepathy.Log.Error = Debug.LogError;
 
-        server.OnConnected = (connectionId) => Debug.Log(connectionId + " Connected");
+        server.OnConnected = (connectionId) => OnConnect(connectionId);
         server.OnData = (connectionId, message) => ReceiveMessage(connectionId, message);
-        server.OnDisconnected = (connectionId) => Debug.Log(connectionId + " Disconnected");
+        server.OnDisconnected = (connectionId) => OnDisconnect(connectionId);
     }
 
     private void Update()
@@ -30,7 +31,7 @@ public class Server : MonoSingleton<Server>
         {
             // tick to process messages
             // (even if not active so we still process disconnect messages)
-            server.Tick(100);
+            server.Tick(1000);
         }
         else
         {
@@ -44,6 +45,19 @@ public class Server : MonoSingleton<Server>
         // running them in the Editor. they would only quit when we press Play
         // again later. this is fine, but let's shut them down here for consistency
         server.Stop();
+    }
+    public void OnConnect(int connectionId)
+    {
+        Debug.Log($"{connectionId} Connected");
+    }
+    public void OnDisconnect(int connectionId)
+    {
+        Debug.Log($"{connectionId} Disconnected");
+
+        int monitorId = connectionIdMonitorIdDictionary[connectionId];
+        GameObject.Find("Ctrl").GetComponent<Ctrl_Main>().RefreshDeviceMonitorLocal(monitorId, false);
+
+        connectionIdMonitorIdDictionary.Remove(connectionId);
     }
     public void ReceiveMessage(int connectionId, ArraySegment<byte> message)
     {
@@ -60,11 +74,19 @@ public class Server : MonoSingleton<Server>
 
         switch (command)
         {
+                // Studio
+            case ConstantValues.CMD_REQUEST_CONNECT_STUDIO:
+                ResponseStudioConnectResult(connectionId, 0);
+                break;
             case ConstantValues.CMD_REQUEST_GET_PASSWORD:
                 ResponseGetPassword(connectionId);
                 break;
             case ConstantValues.CMD_REQUEST_ADD_STUDIO_DATA:
                 ResponseAddStudioData(connectionId, ref messageBytes);
+                break;
+                // Editor
+            case ConstantValues.CMD_REQUEST_CONNECT_EDITOR:
+                ResponseStudioConnectResult(connectionId, 1);
                 break;
             case ConstantValues.CMD_REQUEST_CHECK_PASSWORD:
                 ResponseCheckPassword(connectionId, ref messageBytes);
@@ -74,6 +96,10 @@ public class Server : MonoSingleton<Server>
                 break;
             case ConstantValues.CMD_REQUEST_ADD_EDITOR_DATA:
                 ResponseAddEditorData(connectionId, ref messageBytes);
+                break;
+                // Gallery
+            case ConstantValues.CMD_REQUEST_CONNECT_GALLERY:
+                ResponseStudioConnectResult(connectionId, 2);
                 break;
             case ConstantValues.CMD_REQUEST_GET_UNDISPLAYED_COUNT:
                 ResponseGetUndisplayedCount(connectionId, ref messageBytes);
@@ -87,6 +113,30 @@ public class Server : MonoSingleton<Server>
             default:
                 break;
         }
+    }
+    public void ResponseStudioConnectResult(int connectionId, int monitorId)
+    {
+        bool result = false;
+
+        if (!connectionIdMonitorIdDictionary.ContainsKey(connectionId))
+        {
+            connectionIdMonitorIdDictionary.Add(connectionId, monitorId);
+            GameObject.Find("Ctrl").GetComponent<Ctrl_Main>().RefreshDeviceMonitorLocal(monitorId, true);
+
+            result = true;
+        }
+
+        // Response Result
+        using (MemoryStream ms = new MemoryStream())
+        using (BinaryWriter bw = new BinaryWriter(ms))
+        {
+            bw.Write(ConstantValues.CMD_RESPONSE_CONNECT_RESULT);
+            bw.Write(result);
+
+            server.Send(connectionId, ms.ToArray());
+        }
+
+        Debug.Log($"Response Connect Reulst::{connectionId}::{monitorId}::{result}");
     }
     public void ResponseGetPassword(int connectionId)
     {

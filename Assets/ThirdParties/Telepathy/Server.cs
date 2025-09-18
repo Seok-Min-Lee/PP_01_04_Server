@@ -42,7 +42,6 @@ namespace Telepathy
 
         // clients with <connectionId, ConnectionState>
         readonly ConcurrentDictionary<int, ConnectionState> clients = new ConcurrentDictionary<int, ConnectionState>();
-
         // connectionId counter
         int counter;
 
@@ -321,7 +320,8 @@ namespace Telepathy
             // find the connection
             if (clients.TryGetValue(connectionId, out ConnectionState connection))
             {
-                return ((IPEndPoint)connection.client.Client.RemoteEndPoint).Address.ToString();
+                //return ((IPEndPoint)connection.client.Client.RemoteEndPoint).Address.ToString();
+                return ((IPEndPoint)connection.client.Client.RemoteEndPoint).Address.MapToIPv4().ToString();
             }
             return "";
         }
