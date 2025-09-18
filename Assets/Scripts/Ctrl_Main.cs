@@ -22,7 +22,8 @@ public class Ctrl_Main : MonoBehaviour
         deviceMonitors[0].Init("Studio", "127.0.0.1");
         deviceMonitors[1].Init("Editor", "127.0.0.1");
         deviceMonitors[2].Init("Gallery", "127.0.0.1");
-
+        
+        ReloadData();
         RefreshView();
     }
     private void Update()
@@ -34,6 +35,7 @@ public class Ctrl_Main : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.S))
         {
+            ReloadData();
             RefreshView();
         }
     }
@@ -41,11 +43,15 @@ public class Ctrl_Main : MonoBehaviour
     {
         deviceMonitors[index].UpdateConnection(value);
     }
-    private void RefreshView()
+    private void ReloadData()
     {
-        DatabaseManager.instance.Refresh();
-        RefreshStudioDataView(DatabaseManager.instance.StudioDataList);
-        RefreshEditorDataView(DatabaseManager.instance.EditorDataList);
+        DatabaseManager.instance.RefreshStudioData();
+        DatabaseManager.instance.RefreshEditorData();
+    }
+    public void RefreshView()
+    {
+        RefreshStudioDataView(DatabaseManager.instance.StudioDataDictionary.Values);
+        RefreshEditorDataView(DatabaseManager.instance.EditorDataDictionary.Values);
     }
     private void RefreshStudioDataView(IEnumerable<StudioData> data)
     {

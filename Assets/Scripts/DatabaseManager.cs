@@ -8,32 +8,23 @@ using UnityEngine;
 
 public class DatabaseManager : Singleton<DatabaseManager>
 {
-    public List<StudioData> StudioDataList
-    {
-        get
-        {
-            return studioDataList;
-        }
-    }
-    public List<EditorData> EditorDataList
-    {
-        get
-        {
-            return editorDataList;
-        }
-    }
+    public Dictionary<int, StudioData> StudioDataDictionary => studioDataDictionary;
+    public Dictionary<int, EditorData> EditorDataDictionary => editorDataDictionary;
+
     private Dictionary<int, int> passwordDictionary = new Dictionary<int, int>();
-    private List<StudioData> studioDataList = new List<StudioData>();
-    private List<EditorData> editorDataList = new List<EditorData>();
+    private Dictionary<int, StudioData> studioDataDictionary = new Dictionary<int, StudioData>();
+    private Dictionary<int, EditorData> editorDataDictionary = new Dictionary<int, EditorData>();
 
     private SqliteConnection conn;
     private string connectionStr { get { return "URI=file:" + Application.streamingAssetsPath + "/db_PP_01.db"; } }
-    public void Refresh()
+    public void RefreshStudioData()
     {
-        studioDataList = GetStudioData();
-        editorDataList = GetEditorData();
-
-        passwordDictionary = studioDataList.Select(x => x.password).ToDictionary(k => k, v => v);
+        studioDataDictionary = GetStudioData();
+        passwordDictionary = studioDataDictionary.Values.Select(x => x.password).ToDictionary(k => k, v => v);
+    }
+    public void RefreshEditorData()
+    {
+        editorDataDictionary = GetEditorData();
     }
     public StudioDataRaw GetStudioDataRaw(int password)
     {
@@ -160,11 +151,21 @@ public class DatabaseManager : Singleton<DatabaseManager>
             {
                 conn.Open();
 
-                string query = $"UPDATE TB_EDITOR SET IsDisplayed = 2, Display_datetime = datetime('now', 'localtime') WHERE id = {id}";
+                string query = "UPDATE TB_EDITOR SET IsDisplayed = @IsDisplayed, Display_datetime = @Display_datetime WHERE id = @Id";
 
                 using (SqliteCommand cmd = new SqliteCommand(query, conn))
                 {
+                    int isDisplayed = 2;
+                    string displayeDatetime = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+                    cmd.Parameters.AddWithValue("@IsDisplayed", isDisplayed);
+                    cmd.Parameters.AddWithValue("@Display_datetime", displayeDatetime);
+                    cmd.Parameters.AddWithValue("@Id", id);
+
                     cmd.ExecuteNonQuery();
+
+                    editorDataDictionary[id].SetDisplayDateTime(displayeDatetime);
+                    GameObject.Find("Ctrl").GetComponent<Ctrl_Main>().RefreshView();
                 }
 
                 conn.Close();
@@ -179,9 +180,9 @@ public class DatabaseManager : Singleton<DatabaseManager>
         sResult = string.Empty;
         return true;
     }
-    public List<StudioData> GetStudioData()
+    private Dictionary<int, StudioData> GetStudioData()
     {
-        List<StudioData> views = new List<StudioData>();
+        Dictionary<int, StudioData> dictionary = new Dictionary<int, StudioData>();
 
         using (conn = new SqliteConnection(connectionStr))
         {
@@ -199,11 +200,12 @@ public class DatabaseManager : Singleton<DatabaseManager>
                         int password = reader.GetInt32(0);
                         string registerDateTime = reader.GetString(1);
 
-                        views.Add(new StudioData(
+                        StudioData data = new StudioData(
                             index: index++,
                             password: password,
                             registerDateTime: registerDateTime
-                        ));
+                        );
+                        dictionary.Add(data.index, data);
                     }
                 }
             }
@@ -211,11 +213,11 @@ public class DatabaseManager : Singleton<DatabaseManager>
             conn.Close();
         }
 
-        return views;
+        return dictionary;
     }
-    public List<EditorData> GetEditorData()
+    private Dictionary<int, EditorData> GetEditorData()
     {
-        List<EditorData> views = new List<EditorData>();
+        Dictionary<int, EditorData> dictionary = new Dictionary<int, EditorData>();
 
         using (conn = new SqliteConnection(connectionStr))
         {
@@ -223,23 +225,26 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
             using (IDbCommand cmd = conn.CreateCommand())
             {
-                cmd.CommandText = "SELECT password, register_datetime, display_datetime FROM TB_EDITOR ORDER BY id ASC";
+                cmd.CommandText = "SELECT id, password, register_datetime, display_datetime FROM TB_EDITOR ORDER BY id ASC";
 
                 using (IDataReader reader = cmd.ExecuteReader())
                 {
                     int index = 1;
                     while (reader.Read())
                     {
-                        int password = reader.GetInt32(0);
-                        string registerDateTime = reader.GetString(1);
-                        string displayDateTime = reader.GetString(2);
+                        int id = reader.GetInt32(0);
+                        int password = reader.GetInt32(1);
+                        string registerDateTime = reader.GetString(2);
+                        string displayDateTime = reader.GetString(3);
 
-                        views.Add(new EditorData(
+                        EditorData data = new EditorData(
                             index: index++,
+                            id: id,
                             password: password,
                             registerDateTime: registerDateTime,
                             displayDateTime: displayDateTime
-                        ));
+                        );
+                        dictionary.Add(data.id, data);
                     }
                 }
             }
@@ -247,7 +252,7 @@ public class DatabaseManager : Singleton<DatabaseManager>
             conn.Close();
         }
 
-        return views;
+        return dictionary;
     }
     public bool AddStudioData(int password, byte[] texture, out string sResult)
     {
