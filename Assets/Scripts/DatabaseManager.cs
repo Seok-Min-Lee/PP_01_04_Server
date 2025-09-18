@@ -10,38 +10,26 @@ public class DatabaseManager : Singleton<DatabaseManager>
 {
     public Dictionary<int, StudioData> StudioDataDictionary => studioDataDictionary;
     public Dictionary<int, EditorData> EditorDataDictionary => editorDataDictionary;
+    public Dictionary<int, int> PasswordDictionary => passwordDictionary;
 
-    private Dictionary<int, int> passwordDictionary = new Dictionary<int, int>();
     private Dictionary<int, StudioData> studioDataDictionary = new Dictionary<int, StudioData>();
     private Dictionary<int, EditorData> editorDataDictionary = new Dictionary<int, EditorData>();
+    private Dictionary<int, int> passwordDictionary = new Dictionary<int, int>();
 
-    private SqliteConnection conn;
-    private string connectionStr => "URI=file:" + Application.streamingAssetsPath + "/db_PP_01.db";
-    private Ctrl_Main Ctrl
-    {
-        get
-        {
-            if (ctrl == null)
-            {
-                ctrl = GameObject.Find("Ctrl").GetComponent<Ctrl_Main>();
-            }
-
-            return ctrl;
-        }
-    }
-    private Ctrl_Main ctrl;
+    private Ctrl_Main ctrl => _ctrl ??= GameObject.Find("Ctrl").GetComponent<Ctrl_Main>();
+    private Ctrl_Main _ctrl; 
 
     private int studioDataId = 1;
     private int editorDataId = 1;
     
-    public void RefreshStudioData()
-    {
-        studioDataDictionary = GetStudioData();
-        passwordDictionary = studioDataDictionary.Values.Select(x => x.password).ToDictionary(k => k, v => v);
-    }
-    public void RefreshEditorData()
+    private SqliteConnection conn;
+    private readonly string connectionStr = "URI=file:" + Application.streamingAssetsPath + "/db_PP_01.db";
+    
+    public void InitData()
     {
         editorDataDictionary = GetEditorData();
+        studioDataDictionary = GetStudioData();
+        passwordDictionary = studioDataDictionary.Values.Select(x => x.password).ToDictionary(k => k, v => v);
     }
     public StudioDataRaw GetStudioDataRaw(int password)
     {
@@ -134,8 +122,148 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
         return raw;
     }
+    public bool TryUpdateDisplayState(int id, out string sResult)
+    {
+        try
+        {
+            using (conn = new SqliteConnection(connectionStr))
+            {
+                conn.Open();
+
+                string query = "UPDATE TB_EDITOR SET IsDisplayed = @IsDisplayed, Display_datetime = @Display_datetime WHERE id = @Id";
+
+                using (SqliteCommand cmd = new SqliteCommand(query, conn))
+                {
+                    int isDisplayed = 2;
+                    string displayeDatetime = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+                    cmd.Parameters.AddWithValue("@IsDisplayed", isDisplayed);
+                    cmd.Parameters.AddWithValue("@Display_datetime", displayeDatetime);
+                    cmd.Parameters.AddWithValue("@Id", id);
+
+                    cmd.ExecuteNonQuery();
+
+                    editorDataDictionary[id].SetDisplayDateTime(displayeDatetime);
+                    ctrl.RefreshEditorDataView(editorDataDictionary.Values);
+                }
+
+                conn.Close();
+            }
+        }
+        catch (Exception e)
+        {
+            sResult = e.Message;
+            return false;
+        }
+
+        sResult = string.Empty;
+        return true;
+    }
+    public bool TryAddStudioData(int password, byte[] texture, out string sResult)
+    {
+        try
+        {
+            using (conn = new SqliteConnection(connectionStr))
+            {
+                conn.Open();
+
+                string query =
+                    "INSERT INTO " +
+                        "TB_STUDIO (password, texture, register_datetime) " +
+                    "VALUES " +
+                        "(@password, @texture, @register_datetime)";
+
+                using (SqliteCommand cmd = new SqliteCommand(query, conn))
+                {
+                    string datetime = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+                    cmd.Parameters.AddWithValue("@password", password);
+                    cmd.Parameters.AddWithValue("@texture", texture);
+                    cmd.Parameters.AddWithValue("@register_datetime", datetime);
+
+                    cmd.ExecuteNonQuery();
+
+                    //
+                    StudioData data = new StudioData(
+                        index: studioDataId++, 
+                        password: password, 
+                        registerDateTime: datetime
+                    );
+                    studioDataDictionary.Add(data.index, data);
+
+                    //
+                    ctrl.RefreshStudioDataView(studioDataDictionary.Values);
+                }
+
+                conn.Close();
+            }
+        }
+        catch (Exception e)
+        {
+            sResult = e.Message;
+            return false;
+        }
+
+        sResult = string.Empty;
+        return true;
+    }
+    public bool TryAddEditorData(int password, int filterNo, byte[] texture, out string sResult)
+    {
+        try
+        {
+            using (conn = new SqliteConnection(connectionStr))
+            {
+                conn.Open();
+
+                string query =
+                    "INSERT INTO " +
+                        "TB_EDITOR (password, filterNo, isDisplayed, texture, register_datetime, display_datetime) " +
+                    "VALUES " +
+                        "(@password, @filterNo, @isDisplayed, @texture, @register_datetime, @display_datetime)";
+
+                using (SqliteCommand cmd = new SqliteCommand(query, conn))
+                {
+                    string datetime = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+                    cmd.Parameters.AddWithValue("@password", password);
+                    cmd.Parameters.AddWithValue("@filterNo", filterNo);
+                    cmd.Parameters.AddWithValue("@isDisplayed", false);
+                    cmd.Parameters.AddWithValue("@texture", texture);
+                    cmd.Parameters.AddWithValue("@register_datetime", datetime);
+                    cmd.Parameters.AddWithValue("@display_datetime", "-");
+
+                    cmd.ExecuteNonQuery();
+
+                    //
+                    int tempId = editorDataDictionary.Keys.Max() + 1;
+                    EditorData data = new EditorData(
+                        index: editorDataId++, 
+                        id: tempId, 
+                        password: password, 
+                        registerDateTime: datetime, 
+                        displayDateTime: "-"
+                    );
+                    editorDataDictionary.Add(data.id, data);
+
+                    //
+                    ctrl.RefreshEditorDataView(editorDataDictionary.Values);
+                }
+
+                conn.Close();
+            }
+        }
+        catch (Exception e)
+        {
+            sResult = e.Message;
+            return false;
+        }
+
+        sResult = string.Empty;
+        return true;
+    }
     public int GetUnDisplayedCount()
     {
+        // 이걸 db에서 처리하는게 적절한가?
         int count = 0;
 
         using (conn = new SqliteConnection(connectionStr))
@@ -159,43 +287,6 @@ public class DatabaseManager : Singleton<DatabaseManager>
         }
 
         return count;
-    }
-    public bool TryUpdateDisplayState(int id, out string sResult)
-    {
-        try
-        {
-            using (conn = new SqliteConnection(connectionStr))
-            {
-                conn.Open();
-
-                string query = "UPDATE TB_EDITOR SET IsDisplayed = @IsDisplayed, Display_datetime = @Display_datetime WHERE id = @Id";
-
-                using (SqliteCommand cmd = new SqliteCommand(query, conn))
-                {
-                    int isDisplayed = 2;
-                    string displayeDatetime = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-
-                    cmd.Parameters.AddWithValue("@IsDisplayed", isDisplayed);
-                    cmd.Parameters.AddWithValue("@Display_datetime", displayeDatetime);
-                    cmd.Parameters.AddWithValue("@Id", id);
-
-                    cmd.ExecuteNonQuery();
-
-                    editorDataDictionary[id].SetDisplayDateTime(displayeDatetime);
-                    Ctrl.RefreshEditorDataView(editorDataDictionary.Values);
-                }
-
-                conn.Close();
-            }
-        }
-        catch (Exception e)
-        {
-            sResult = e.Message;
-            return false;
-        }
-
-        sResult = string.Empty;
-        return true;
     }
     private Dictionary<int, StudioData> GetStudioData()
     {
@@ -275,126 +366,5 @@ public class DatabaseManager : Singleton<DatabaseManager>
         editorDataId = index;
 
         return dictionary;
-    }
-    public bool AddStudioData(int password, byte[] texture, out string sResult)
-    {
-        try
-        {
-            using (conn = new SqliteConnection(connectionStr))
-            {
-                conn.Open();
-
-                string query =
-                    "INSERT INTO " +
-                        "TB_STUDIO (password, texture, register_datetime) " +
-                    "VALUES " +
-                        "(@password, @texture, @register_datetime)";
-
-                using (SqliteCommand cmd = new SqliteCommand(query, conn))
-                {
-                    string datetime = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-
-                    cmd.Parameters.AddWithValue("@password", password);
-                    cmd.Parameters.AddWithValue("@texture", texture);
-                    cmd.Parameters.AddWithValue("@register_datetime", datetime);
-
-                    cmd.ExecuteNonQuery();
-
-                    StudioData data = new StudioData(
-                        index: studioDataId++, 
-                        password: password, 
-                        registerDateTime: datetime
-                    );
-
-                    studioDataDictionary.Add(data.index, data);
-
-                    Ctrl.RefreshStudioDataView(studioDataDictionary.Values);
-                }
-
-                conn.Close();
-            }
-        }
-        catch (Exception e)
-        {
-            sResult = e.Message;
-            return false;
-        }
-
-        sResult = string.Empty;
-        return true;
-    }
-    public bool AddEditorData(int password, int filterNo, byte[] texture, out string sResult)
-    {
-        try
-        {
-            using (conn = new SqliteConnection(connectionStr))
-            {
-                conn.Open();
-
-                string query =
-                    "INSERT INTO " +
-                        "TB_EDITOR (password, filterNo, isDisplayed, texture, register_datetime, display_datetime) " +
-                    "VALUES " +
-                        "(@password, @filterNo, @isDisplayed, @texture, @register_datetime, @display_datetime)";
-
-                using (SqliteCommand cmd = new SqliteCommand(query, conn))
-                {
-                    string datetime = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-
-                    cmd.Parameters.AddWithValue("@password", password);
-                    cmd.Parameters.AddWithValue("@filterNo", filterNo);
-                    cmd.Parameters.AddWithValue("@isDisplayed", false);
-                    cmd.Parameters.AddWithValue("@texture", texture);
-                    cmd.Parameters.AddWithValue("@register_datetime", datetime);
-                    cmd.Parameters.AddWithValue("@display_datetime", "-");
-
-                    cmd.ExecuteNonQuery();
-
-                    int tempId = editorDataDictionary.Keys.Max() + 1;
-                    EditorData data = new EditorData(
-                        index: editorDataId++, 
-                        id: tempId, 
-                        password: password, 
-                        registerDateTime: datetime, 
-                        displayDateTime: "-"
-                    );
-
-                    editorDataDictionary.Add(data.id, data);
-
-                    Ctrl.RefreshEditorDataView(editorDataDictionary.Values);
-                }
-
-                conn.Close();
-            }
-        }
-        catch (Exception e)
-        {
-            sResult = e.Message;
-            return false;
-        }
-
-        sResult = string.Empty;
-        return true;
-    }
-    public int GetAvailablePassword()
-    {
-        int password;
-
-        while (true)
-        {
-            password = UnityEngine.Random.Range(0, 10000);
-
-            if (!passwordDictionary.ContainsKey(password))
-            {
-                passwordDictionary.Add(password, password);
-                break;
-            }
-        }
-
-        return password;
-    }
-    public bool IsRightPassword(int password)
-    {
-        return passwordDictionary.ContainsKey(password);
     }
 }

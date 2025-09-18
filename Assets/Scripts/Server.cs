@@ -10,6 +10,9 @@ public class Server : MonoSingleton<Server>
 {
     private Telepathy.Server server = new Telepathy.Server(1920 * 1080 + 1024);
     private Dictionary<int, int> connectionIdMonitorIdDictionary = new Dictionary<int, int>();
+
+    private Ctrl_Main ctrl => _ctrl ??= FindObjectOfType<Ctrl_Main>();
+    private Ctrl_Main _ctrl;
     private void Awake()
     {
         // update even if window isn't focused, otherwise we don't receive.
@@ -55,7 +58,7 @@ public class Server : MonoSingleton<Server>
         Debug.Log($"{connectionId} Disconnected");
 
         int monitorId = connectionIdMonitorIdDictionary[connectionId];
-        GameObject.Find("Ctrl").GetComponent<Ctrl_Main>().RefreshDeviceMonitorLocal(monitorId, false);
+        ctrl.RefreshDeviceMonitorLocal(monitorId, false);
 
         connectionIdMonitorIdDictionary.Remove(connectionId);
     }
@@ -76,7 +79,7 @@ public class Server : MonoSingleton<Server>
         {
                 // Studio
             case ConstantValues.CMD_REQUEST_CONNECT_STUDIO:
-                ResponseStudioConnectResult(connectionId, 0);
+                ResponseDeviceConnectResult(connectionId, 0);
                 break;
             case ConstantValues.CMD_REQUEST_GET_PASSWORD:
                 ResponseGetPassword(connectionId);
@@ -86,7 +89,7 @@ public class Server : MonoSingleton<Server>
                 break;
                 // Editor
             case ConstantValues.CMD_REQUEST_CONNECT_EDITOR:
-                ResponseStudioConnectResult(connectionId, 1);
+                ResponseDeviceConnectResult(connectionId, 1);
                 break;
             case ConstantValues.CMD_REQUEST_CHECK_PASSWORD:
                 ResponseCheckPassword(connectionId, ref messageBytes);
@@ -99,7 +102,7 @@ public class Server : MonoSingleton<Server>
                 break;
                 // Gallery
             case ConstantValues.CMD_REQUEST_CONNECT_GALLERY:
-                ResponseStudioConnectResult(connectionId, 2);
+                ResponseDeviceConnectResult(connectionId, 2);
                 break;
             case ConstantValues.CMD_REQUEST_GET_UNDISPLAYED_COUNT:
                 ResponseGetUndisplayedCount(connectionId, ref messageBytes);
@@ -114,19 +117,20 @@ public class Server : MonoSingleton<Server>
                 break;
         }
     }
-    public void ResponseStudioConnectResult(int connectionId, int monitorId)
+    private void ResponseDeviceConnectResult(int connectionId, int monitorId)
     {
         bool result = false;
 
+        // UI Update
         if (!connectionIdMonitorIdDictionary.ContainsKey(connectionId))
         {
             connectionIdMonitorIdDictionary.Add(connectionId, monitorId);
-            GameObject.Find("Ctrl").GetComponent<Ctrl_Main>().RefreshDeviceMonitorLocal(monitorId, true);
+            ctrl.RefreshDeviceMonitorLocal(monitorId, true);
 
             result = true;
         }
 
-        // Response Result
+        // Response Client
         using (MemoryStream ms = new MemoryStream())
         using (BinaryWriter bw = new BinaryWriter(ms))
         {
@@ -138,24 +142,37 @@ public class Server : MonoSingleton<Server>
 
         Debug.Log($"Response Connect Reulst::{connectionId}::{monitorId}::{result}");
     }
-    public void ResponseGetPassword(int connectionId)
+    private void ResponseGetPassword(int connectionId)
     {
-        byte[] messages = new byte[8];
+        int password = -1;
 
-        int command = ConstantValues.CMD_RESPONSE_GET_PASSWORD;
-        byte[] commandBytes = BitConverter.GetBytes(command);
-        Buffer.BlockCopy(commandBytes, 0, messages, 0, 4);
+        using (MemoryStream ms = new MemoryStream())
+        using (BinaryWriter bw = new BinaryWriter(ms))
+        {
+            password = GetAvailablePassword();
 
-        int password = DatabaseManager.instance.GetAvailablePassword();
-        byte[] passwordBytes = BitConverter.GetBytes(password);
-        Buffer.BlockCopy(passwordBytes, 0, messages, 4, 4);
+            bw.Write(ConstantValues.CMD_RESPONSE_GET_PASSWORD);
+            bw.Write(password);
 
-        server.Send(connectionId, messages);
+            server.Send(connectionId, ms.ToArray());
+        }
+
+        //byte[] messages = new byte[8];
+
+        //int command = ConstantValues.CMD_RESPONSE_GET_PASSWORD;
+        //byte[] commandBytes = BitConverter.GetBytes(command);
+        //Buffer.BlockCopy(commandBytes, 0, messages, 0, 4);
+
+        //int password = GetAvailablePassword();
+        //byte[] passwordBytes = BitConverter.GetBytes(password);
+        //Buffer.BlockCopy(passwordBytes, 0, messages, 4, 4);
+
+        //server.Send(connectionId, messages);
         Debug.Log($"Response Get Password::{connectionId}::{password}");
     }
-    public void ResponseAddStudioData(int connectionId, ref byte[] message)
+    private void ResponseAddStudioData(int connectionId, ref byte[] message)
     {
-        // Receive Studio Data
+        // Receive Data
         byte[] passwordBytes = new byte[4];
         Buffer.BlockCopy(message, 4, passwordBytes, 0, 4);
         int password = BitConverter.ToInt32(passwordBytes);
@@ -167,13 +184,14 @@ public class Server : MonoSingleton<Server>
         byte[] textureByte = new byte[length];
         Buffer.BlockCopy(message, 12, textureByte, 0, length);
 
-        bool bResult = DatabaseManager.instance.AddStudioData(
+        // Add Database
+        bool bResult = DatabaseManager.instance.TryAddStudioData(
             password: password, 
             texture: textureByte, 
             sResult: out string sResult
         );
 
-        // Response Result
+        // Response Cient
         using (MemoryStream ms = new MemoryStream())
         using (BinaryWriter bw = new BinaryWriter(ms))
         {
@@ -187,12 +205,15 @@ public class Server : MonoSingleton<Server>
     }
     private void ResponseCheckPassword(int connectionId, ref byte[] message)
     {
+        // Receive Data
         byte[] passwordBytes = new byte[4];
         Buffer.BlockCopy(message, 4, passwordBytes, 0, 4);
         int password = BitConverter.ToInt32(passwordBytes);
 
-        bool bResult = DatabaseManager.instance.IsRightPassword(password);
+        // Check Password
+        bool bResult = DatabaseManager.instance.PasswordDictionary.ContainsKey(password);
 
+        // Response Client
         using (MemoryStream ms = new MemoryStream())
         using (BinaryWriter bw = new BinaryWriter(ms))
         {
@@ -206,12 +227,15 @@ public class Server : MonoSingleton<Server>
     }
     private void ResponseGetStudioData(int connectionId, ref byte[] message)
     {
+        // Receive Data
         byte[] bytes = new byte[4];
         Buffer.BlockCopy(message, 4, bytes, 0, 4);
         int password = BitConverter.ToInt32(bytes);
 
+        // Get Studio Data
         StudioDataRaw sdr = DatabaseManager.instance.GetStudioDataRaw(password);
 
+        // Response Client
         using (MemoryStream ms = new MemoryStream())
         using (BinaryWriter bw = new BinaryWriter(ms))
         {
@@ -220,10 +244,12 @@ public class Server : MonoSingleton<Server>
 
             server.Send(connectionId, ms.ToArray());
         }
+
         Debug.Log($"Response Get Studio Data::{connectionId}::{sdr.ToString()}");
     }
     private void ResponseAddEditorData(int connectionId, ref byte[] message)
     {
+        // Receive Data
         byte[] headerLengthBytes = new byte[4];
         Buffer.BlockCopy(message, 4, headerLengthBytes, 0, 4);
         int headerLength = BitConverter.ToInt32(headerLengthBytes);
@@ -232,6 +258,7 @@ public class Server : MonoSingleton<Server>
         Buffer.BlockCopy(message, 8, headerBytes, 0, headerLength);
         string headerStr = Encoding.UTF8.GetString(headerBytes);
 
+        // Data Parsing
         EditorDataRaw.Header header = JsonUtility.FromJson<EditorDataRaw.Header>(headerStr);
 
         byte[] textureBytes = new byte[header.TextureLength];
@@ -248,13 +275,15 @@ public class Server : MonoSingleton<Server>
             textureRaw: textureBytes
         );
 
-        bool result = DatabaseManager.instance.AddEditorData(
+        // Add Database
+        bool result = DatabaseManager.instance.TryAddEditorData(
             password: raw.Password, 
             filterNo: raw.FilterNo, 
             texture: raw.Texture, 
             sResult: out string sResult
         );
 
+        // Response Client
         using (MemoryStream ms = new MemoryStream())
         using (BinaryWriter bw = new BinaryWriter(ms))
         {
@@ -270,6 +299,7 @@ public class Server : MonoSingleton<Server>
     {
         int count = DatabaseManager.instance.GetUnDisplayedCount();
 
+        // Response Client
         using (MemoryStream ms = new MemoryStream())
         using (BinaryWriter bw = new BinaryWriter(ms))
         {
@@ -285,6 +315,7 @@ public class Server : MonoSingleton<Server>
     {
         EditorDataRaw edr = DatabaseManager.instance.GetEditorDataRaw();
 
+        // Response Client
         using (MemoryStream ms = new MemoryStream())
         using (BinaryWriter bw = new BinaryWriter(ms))
         {
@@ -298,12 +329,15 @@ public class Server : MonoSingleton<Server>
     }
     private void ResponseUpdateDisplayState(int connectionId, ref byte[] message)
     {
+        // Receive Data
         byte[] idBytes = new byte[4];
         Buffer.BlockCopy(message, 4, idBytes, 0, 4);
         int id = BitConverter.ToInt32(idBytes);
 
+        // Update Database
         bool result = DatabaseManager.instance.TryUpdateDisplayState(id, out string sResult);
 
+        // Response Client
         using (MemoryStream ms = new MemoryStream())
         using (BinaryWriter bw = new BinaryWriter(ms))
         {
@@ -315,5 +349,24 @@ public class Server : MonoSingleton<Server>
         }
 
         Debug.Log($"Response Update Display State::{connectionId}::{id}::{result}");
+    }
+
+    private int GetAvailablePassword()
+    {
+        int password;
+        Dictionary<int, int> dictionary = DatabaseManager.instance.PasswordDictionary;
+
+        while (true)
+        {
+            password = UnityEngine.Random.Range(0, 10000);
+
+            if (!dictionary.ContainsKey(password))
+            {
+                dictionary.Add(password, password);
+                break;
+            }
+        }
+
+        return password;
     }
 }

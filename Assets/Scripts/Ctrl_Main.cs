@@ -23,8 +23,7 @@ public class Ctrl_Main : MonoBehaviour
         deviceMonitors[1].Init("Editor", "127.0.0.1");
         deviceMonitors[2].Init("Gallery", "127.0.0.1");
 
-        DatabaseManager.instance.RefreshStudioData();
-        DatabaseManager.instance.RefreshEditorData();
+        DatabaseManager.instance.InitData();
         RefreshStudioDataView(DatabaseManager.instance.StudioDataDictionary.Values);
         RefreshEditorDataView(DatabaseManager.instance.EditorDataDictionary.Values);
     }
@@ -37,8 +36,7 @@ public class Ctrl_Main : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.S))
         {
-            DatabaseManager.instance.RefreshStudioData();
-            DatabaseManager.instance.RefreshEditorData();
+            DatabaseManager.instance.InitData();
             RefreshStudioDataView(DatabaseManager.instance.StudioDataDictionary.Values);
             RefreshEditorDataView(DatabaseManager.instance.EditorDataDictionary.Values);
         }
@@ -49,6 +47,7 @@ public class Ctrl_Main : MonoBehaviour
     }
     public void RefreshStudioDataView(IEnumerable<StudioData> data)
     {
+        // Prepare Object
         int size = data.Count();
 
         int diff = studioDataViews.Count - size;
@@ -68,6 +67,7 @@ public class Ctrl_Main : MonoBehaviour
             }
         }
 
+        // Init Data
         for (int i = 0; i < size; i++)
         {
             studioDataViews[i].Activate(data.ElementAt(i));
@@ -76,6 +76,7 @@ public class Ctrl_Main : MonoBehaviour
     }
     public void RefreshEditorDataView(IEnumerable<EditorData> data)
     {
+        // Prepare Object
         int size = data.Count();
 
         int diff = editorDataViews.Count - size;
@@ -95,6 +96,7 @@ public class Ctrl_Main : MonoBehaviour
             }
         }
 
+        // Init Data
         for (int i = 0; i < size; i++)
         {
             editorDataViews[i].Activate(data.ElementAt(i));
@@ -109,13 +111,13 @@ public class Ctrl_Main : MonoBehaviour
             int password = pw + i;
             byte[] texture = System.IO.File.ReadAllBytes("C:/Users/dltjr/Desktop/»õ Æú´õ (2)/" + (i + 1) + ".jpeg");
 
-            DatabaseManager.instance.AddStudioData(
+            DatabaseManager.instance.TryAddStudioData(
                 password: password,
                 texture: texture,
                 sResult: out string sResult
             );
 
-            DatabaseManager.instance.AddEditorData(
+            DatabaseManager.instance.TryAddEditorData(
                 password: password,
                 filterNo: 0,
                 texture: texture,
