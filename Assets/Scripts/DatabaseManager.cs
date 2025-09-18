@@ -16,7 +16,24 @@ public class DatabaseManager : Singleton<DatabaseManager>
     private Dictionary<int, EditorData> editorDataDictionary = new Dictionary<int, EditorData>();
 
     private SqliteConnection conn;
-    private string connectionStr { get { return "URI=file:" + Application.streamingAssetsPath + "/db_PP_01.db"; } }
+    private string connectionStr => "URI=file:" + Application.streamingAssetsPath + "/db_PP_01.db";
+    private Ctrl_Main Ctrl
+    {
+        get
+        {
+            if (ctrl == null)
+            {
+                ctrl = GameObject.Find("Ctrl").GetComponent<Ctrl_Main>();
+            }
+
+            return ctrl;
+        }
+    }
+    private Ctrl_Main ctrl;
+
+    private int studioDataId = 1;
+    private int editorDataId = 1;
+    
     public void RefreshStudioData()
     {
         studioDataDictionary = GetStudioData();
@@ -165,7 +182,7 @@ public class DatabaseManager : Singleton<DatabaseManager>
                     cmd.ExecuteNonQuery();
 
                     editorDataDictionary[id].SetDisplayDateTime(displayeDatetime);
-                    GameObject.Find("Ctrl").GetComponent<Ctrl_Main>().RefreshView();
+                    Ctrl.RefreshEditorDataView(editorDataDictionary.Values);
                 }
 
                 conn.Close();
@@ -184,6 +201,7 @@ public class DatabaseManager : Singleton<DatabaseManager>
     {
         Dictionary<int, StudioData> dictionary = new Dictionary<int, StudioData>();
 
+        int index = studioDataId;
         using (conn = new SqliteConnection(connectionStr))
         {
             conn.Open();
@@ -194,7 +212,6 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
                 using (IDataReader reader = cmd.ExecuteReader())
                 {
-                    int index = 1;
                     while (reader.Read())
                     {
                         int password = reader.GetInt32(0);
@@ -213,11 +230,15 @@ public class DatabaseManager : Singleton<DatabaseManager>
             conn.Close();
         }
 
+        studioDataId = index;
+
         return dictionary;
     }
     private Dictionary<int, EditorData> GetEditorData()
     {
         Dictionary<int, EditorData> dictionary = new Dictionary<int, EditorData>();
+
+        int index = editorDataId;
 
         using (conn = new SqliteConnection(connectionStr))
         {
@@ -229,7 +250,6 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
                 using (IDataReader reader = cmd.ExecuteReader())
                 {
-                    int index = 1;
                     while (reader.Read())
                     {
                         int id = reader.GetInt32(0);
@@ -252,6 +272,8 @@ public class DatabaseManager : Singleton<DatabaseManager>
             conn.Close();
         }
 
+        editorDataId = index;
+
         return dictionary;
     }
     public bool AddStudioData(int password, byte[] texture, out string sResult)
@@ -270,11 +292,23 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
                 using (SqliteCommand cmd = new SqliteCommand(query, conn))
                 {
+                    string datetime = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
                     cmd.Parameters.AddWithValue("@password", password);
                     cmd.Parameters.AddWithValue("@texture", texture);
-                    cmd.Parameters.AddWithValue("@register_datetime", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                    cmd.Parameters.AddWithValue("@register_datetime", datetime);
 
                     cmd.ExecuteNonQuery();
+
+                    StudioData data = new StudioData(
+                        index: studioDataId++, 
+                        password: password, 
+                        registerDateTime: datetime
+                    );
+
+                    studioDataDictionary.Add(data.index, data);
+
+                    Ctrl.RefreshStudioDataView(studioDataDictionary.Values);
                 }
 
                 conn.Close();
@@ -305,14 +339,29 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
                 using (SqliteCommand cmd = new SqliteCommand(query, conn))
                 {
+                    string datetime = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
                     cmd.Parameters.AddWithValue("@password", password);
                     cmd.Parameters.AddWithValue("@filterNo", filterNo);
                     cmd.Parameters.AddWithValue("@isDisplayed", false);
                     cmd.Parameters.AddWithValue("@texture", texture);
-                    cmd.Parameters.AddWithValue("@register_datetime", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                    cmd.Parameters.AddWithValue("@register_datetime", datetime);
                     cmd.Parameters.AddWithValue("@display_datetime", "-");
 
                     cmd.ExecuteNonQuery();
+
+                    int tempId = editorDataDictionary.Keys.Max() + 1;
+                    EditorData data = new EditorData(
+                        index: editorDataId++, 
+                        id: tempId, 
+                        password: password, 
+                        registerDateTime: datetime, 
+                        displayDateTime: "-"
+                    );
+
+                    editorDataDictionary.Add(data.id, data);
+
+                    Ctrl.RefreshEditorDataView(editorDataDictionary.Values);
                 }
 
                 conn.Close();

@@ -22,9 +22,11 @@ public class Ctrl_Main : MonoBehaviour
         deviceMonitors[0].Init("Studio", "127.0.0.1");
         deviceMonitors[1].Init("Editor", "127.0.0.1");
         deviceMonitors[2].Init("Gallery", "127.0.0.1");
-        
-        ReloadData();
-        RefreshView();
+
+        DatabaseManager.instance.RefreshStudioData();
+        DatabaseManager.instance.RefreshEditorData();
+        RefreshStudioDataView(DatabaseManager.instance.StudioDataDictionary.Values);
+        RefreshEditorDataView(DatabaseManager.instance.EditorDataDictionary.Values);
     }
     private void Update()
     {
@@ -35,25 +37,17 @@ public class Ctrl_Main : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.S))
         {
-            ReloadData();
-            RefreshView();
+            DatabaseManager.instance.RefreshStudioData();
+            DatabaseManager.instance.RefreshEditorData();
+            RefreshStudioDataView(DatabaseManager.instance.StudioDataDictionary.Values);
+            RefreshEditorDataView(DatabaseManager.instance.EditorDataDictionary.Values);
         }
     }
     public void RefreshDeviceMonitorLocal(int index, bool value)
     {
         deviceMonitors[index].UpdateConnection(value);
     }
-    private void ReloadData()
-    {
-        DatabaseManager.instance.RefreshStudioData();
-        DatabaseManager.instance.RefreshEditorData();
-    }
-    public void RefreshView()
-    {
-        RefreshStudioDataView(DatabaseManager.instance.StudioDataDictionary.Values);
-        RefreshEditorDataView(DatabaseManager.instance.EditorDataDictionary.Values);
-    }
-    private void RefreshStudioDataView(IEnumerable<StudioData> data)
+    public void RefreshStudioDataView(IEnumerable<StudioData> data)
     {
         int size = data.Count();
 
@@ -80,7 +74,7 @@ public class Ctrl_Main : MonoBehaviour
             studioDataViews[i].gameObject.SetActive(true);
         }
     }
-    private void RefreshEditorDataView(IEnumerable<EditorData> data)
+    public void RefreshEditorDataView(IEnumerable<EditorData> data)
     {
         int size = data.Count();
 
