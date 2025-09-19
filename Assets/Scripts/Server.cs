@@ -201,7 +201,7 @@ public class Server : MonoSingleton<Server>
             server.Send(connectionId, ms.ToArray());
         }
 
-        Debug.Log($"Response Add Studio Data Result::{connectionId}::{bResult}");
+        Debug.Log($"Response Add Studio Data Result::{connectionId}::{bResult}/{sResult}");
     }
     private void ResponseCheckPassword(int connectionId, ref byte[] message)
     {
@@ -293,7 +293,7 @@ public class Server : MonoSingleton<Server>
             server.Send(connectionId, ms.ToArray());
         }
 
-        Debug.Log($"Response Add Editor Data::{connectionId}::{result}");
+        Debug.Log($"Response Add Editor Data::{connectionId}::{result}/{sResult}");
     }
     private void ResponseGetUndisplayedCount(int connectionId, ref byte[] message)
     {
@@ -348,7 +348,7 @@ public class Server : MonoSingleton<Server>
             server.Send(connectionId, ms.ToArray());
         }
 
-        Debug.Log($"Response Update Display State::{connectionId}::{id}::{result}");
+        Debug.Log($"Response Update Display State::{connectionId}::{id}::{result}/{sResult}");
     }
 
     private int GetAvailablePassword()
