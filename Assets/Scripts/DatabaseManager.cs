@@ -75,9 +75,10 @@ public class DatabaseManager : Singleton<DatabaseManager>
         {
             conn.Open();
 
+            // Get Data
             using (IDbCommand cmd = conn.CreateCommand())
             {
-                cmd.CommandText = $"SELECT * FROM TB_EDITOR WHERE IsDisplayed = 0 ORDER BY id ASC LIMIT 1";
+                cmd.CommandText = $"SELECT * FROM TB_EDITOR WHERE stateNo = 0 ORDER BY id ASC LIMIT 1";
 
                 using (IDataReader reader = cmd.ExecuteReader())
                 {
@@ -86,34 +87,45 @@ public class DatabaseManager : Singleton<DatabaseManager>
                         int id = reader.GetInt32(0);
                         int password = reader.GetInt32(1);
                         int filterNo = reader.GetInt32(2);
-                        //int isDisplayed = reader.GetInt32(3);
-                        bool isDisplayed = false;
+                        int stateNo = reader.GetInt32(3);
                         byte[] textureRaw = (byte[])reader["Texture"];
                         string registerDateTime = reader.GetString(5);
-                        string displayDateTime = reader.GetString(5);
-                        int studioId = -1;
+                        string releaseDateTime = reader.GetString(6);
+                        string displayDateTime = reader.GetString(7);
 
                         raw = new EditorDataRaw(
                             id: id,
                             password: password, 
                             filterNo: filterNo, 
-                            isDisplayed: isDisplayed,
+                            stateNo: stateNo,
                             registerDateTime: registerDateTime, 
+                            releaseDateTime: releaseDateTime,
                             displayDateTime: displayDateTime, 
-                            studioId: studioId,
                             textureRaw: textureRaw
                         );
                     }
                 }
             }
 
+            // Update Data
             if (raw != null)
             {
-                string query = $"UPDATE TB_EDITOR SET IsDisplayed = 1 WHERE id = {raw.Id}";
+                string query = $"UPDATE TB_EDITOR SET stateNo = @stateNo, release_datetime = @release_datetime WHERE id = @id";
 
                 using (SqliteCommand cmd = new SqliteCommand(query, conn))
                 {
+                    int stateNo = (int)EditorDataRaw.State.Released;
+                    string datetime = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+                    cmd.Parameters.AddWithValue("@stateNo", stateNo);
+                    cmd.Parameters.AddWithValue("@release_datetime", datetime);
+                    cmd.Parameters.AddWithValue("@id", raw.Id);
+
                     cmd.ExecuteNonQuery();
+
+                    //
+                    editorDataDictionary[raw.Id].SetReleaseDateTime(datetime);
+                    ctrl.RefreshEditorDataView(editorDataDictionary.Values);
                 }
             }
 
@@ -130,19 +142,20 @@ public class DatabaseManager : Singleton<DatabaseManager>
             {
                 conn.Open();
 
-                string query = "UPDATE TB_EDITOR SET IsDisplayed = @IsDisplayed, Display_datetime = @Display_datetime WHERE id = @Id";
+                string query = "UPDATE TB_EDITOR SET stateNo = @stateNo, display_datetime = @display_datetime WHERE id = @id";
 
                 using (SqliteCommand cmd = new SqliteCommand(query, conn))
                 {
-                    int isDisplayed = 2;
+                    int stateNo = (int)EditorDataRaw.State.Displayed;
                     string displayeDatetime = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
-                    cmd.Parameters.AddWithValue("@IsDisplayed", isDisplayed);
-                    cmd.Parameters.AddWithValue("@Display_datetime", displayeDatetime);
-                    cmd.Parameters.AddWithValue("@Id", id);
+                    cmd.Parameters.AddWithValue("@stateNo", stateNo);
+                    cmd.Parameters.AddWithValue("@display_datetime", displayeDatetime);
+                    cmd.Parameters.AddWithValue("@id", id);
 
                     cmd.ExecuteNonQuery();
 
+                    //
                     editorDataDictionary[id].SetDisplayDateTime(displayeDatetime);
                     ctrl.RefreshEditorDataView(editorDataDictionary.Values);
                 }
@@ -217,35 +230,37 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
                 string query =
                     "INSERT INTO " +
-                        "TB_EDITOR (password, filterNo, isDisplayed, texture, register_datetime, display_datetime) " +
+                        "TB_EDITOR (password, filterNo, stateNo, texture, register_datetime, release_datetime, display_datetime) " +
                     "VALUES " +
-                        "(@password, @filterNo, @isDisplayed, @texture, @register_datetime, @display_datetime)";
+                        "(@password, @filterNo, @stateNo, @texture, @register_datetime, @release_datetime, @display_datetime)";
 
                 using (SqliteCommand cmd = new SqliteCommand(query, conn))
                 {
+                    int stateNo = (int)EditorDataRaw.State.Registered;
                     string datetime = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
                     cmd.Parameters.AddWithValue("@password", password);
                     cmd.Parameters.AddWithValue("@filterNo", filterNo);
-                    cmd.Parameters.AddWithValue("@isDisplayed", false);
+                    cmd.Parameters.AddWithValue("@stateNo", stateNo);
                     cmd.Parameters.AddWithValue("@texture", texture);
                     cmd.Parameters.AddWithValue("@register_datetime", datetime);
+                    cmd.Parameters.AddWithValue("@release_datetime", "-");
                     cmd.Parameters.AddWithValue("@display_datetime", "-");
 
                     cmd.ExecuteNonQuery();
 
                     //
-                    int tempId = editorDataDictionary.Keys.Max() + 1;
+                    int tempId = editorDataDictionary.Count > 0 ? editorDataDictionary.Keys.Max() + 1 : 1;
                     EditorData data = new EditorData(
                         index: editorDataId++, 
                         id: tempId, 
                         password: password, 
                         registerDateTime: datetime, 
+                        releaseDateTime: "-",
                         displayDateTime: "-"
                     );
                     editorDataDictionary.Add(data.id, data);
 
-                    //
                     ctrl.RefreshEditorDataView(editorDataDictionary.Values);
                 }
 
@@ -272,7 +287,7 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
             using (IDbCommand cmd = conn.CreateCommand())
             {
-                cmd.CommandText = $"SELECT count(id) FROM TB_EDITOR WHERE IsDisplayed = 0";
+                cmd.CommandText = $"SELECT count(id) FROM TB_EDITOR WHERE stateNo = {(int)EditorDataRaw.State.Registered}";
 
                 using (IDataReader reader = cmd.ExecuteReader())
                 {
@@ -337,7 +352,7 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
             using (IDbCommand cmd = conn.CreateCommand())
             {
-                cmd.CommandText = "SELECT id, password, register_datetime, display_datetime FROM TB_EDITOR ORDER BY id ASC";
+                cmd.CommandText = "SELECT id, password, register_datetime, release_datetime, display_datetime FROM TB_EDITOR ORDER BY id ASC";
 
                 using (IDataReader reader = cmd.ExecuteReader())
                 {
@@ -346,13 +361,15 @@ public class DatabaseManager : Singleton<DatabaseManager>
                         int id = reader.GetInt32(0);
                         int password = reader.GetInt32(1);
                         string registerDateTime = reader.GetString(2);
-                        string displayDateTime = reader.GetString(3);
+                        string releaseDateTime = reader.GetString(3);
+                        string displayDateTime = reader.GetString(4);
 
                         EditorData data = new EditorData(
                             index: index++,
                             id: id,
                             password: password,
                             registerDateTime: registerDateTime,
+                            releaseDateTime: releaseDateTime,
                             displayDateTime: displayDateTime
                         );
                         dictionary.Add(data.id, data);

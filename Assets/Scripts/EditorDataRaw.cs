@@ -7,41 +7,47 @@ using UnityEngine;
 [Serializable]
 public class EditorDataRaw
 {
+    public enum State
+    {
+        Registered = 0,
+        Released = 1,
+        Displayed = 2
+    }
     public EditorDataRaw(
         int id, 
         int password, 
         int filterNo, 
-        bool isDisplayed, 
-        string registerDateTime, 
+        int stateNo, 
+        string registerDateTime,
+        string releaseDateTime,
         string displayDateTime, 
-        int studioId, 
         byte[] textureRaw
     )
     {
         this.id = id;
         this.password = password;
         this.filterNo = filterNo;
-        this.isDisplayed = isDisplayed;
+        this.stateNo = stateNo;
         this.registerDateTime = registerDateTime;
+        this.releaseDateTime = releaseDateTime;
         this.displayDateTime = displayDateTime;
-        this.studioId = studioId;
         this.textureRaw = textureRaw;
     }
     public int Id => id;
     public int Password => password;
     public int FilterNo => filterNo;
-    public bool IsDisplayed => isDisplayed;
+    public int StateNo => stateNo;
     public string RegisterDateTime => registerDateTime;
+    public string ReleaseDateTime => releaseDateTime;
     public string DisplayDateTime => displayDateTime;
-    public int StudioId => studioId;
     public byte[] Texture => textureRaw;
     [SerializeField] private int id;
     [SerializeField] private int password;
     [SerializeField] private int filterNo;
-    [SerializeField] private bool isDisplayed;
+    [SerializeField] private int stateNo;
     [SerializeField] private string registerDateTime;
+    [SerializeField] private string releaseDateTime;
     [SerializeField] private string displayDateTime;
-    [SerializeField] private int studioId;
     [NonSerialized] private byte[] textureRaw;
     public override string ToString()
     {
@@ -55,10 +61,10 @@ public class EditorDataRaw
             id: id,
             password: password,
             filterNo: filterNo,
-            isDisplayed: isDisplayed,
+            stateNo: stateNo,
             registerDateTime: registerDateTime,
+            releaseDateTime: releaseDateTime,
             displayDateTime: displayDateTime,
-            studioId: studioId,
             textureLength: textureLength
         );
 
@@ -88,38 +94,38 @@ public class EditorDataRaw
             int id, 
             int password, 
             int filterNo, 
-            bool isDisplayed, 
-            string registerDateTime, 
+            int stateNo, 
+            string registerDateTime,
+            string releaseDateTime,
             string displayDateTime, 
-            int studioId, 
             int textureLength
         )
         {
             this.id = id;
             this.password = password;
             this.filterNo = filterNo;
-            this.isDisplayed = isDisplayed;
+            this.stateNo = stateNo;
             this.registerDateTime = registerDateTime;
+            this.releaseDateTime = releaseDateTime;
             this.displayDateTime = displayDateTime;
-            this.studioId = studioId;
             this.textureLength = textureLength;
         }
         public int Id => id;
         public int Password => password;
         public int FilterNo => filterNo;
-        public bool IsDisplayed => isDisplayed;
+        public int StateNo => stateNo;
         public string RegisterDateTime => registerDateTime;
+        public string ReleaseDateTime => releaseDateTime;
         public string DisplayDateTime => displayDateTime;
-        public int StudioId => studioId;
         public int TextureLength => textureLength;
 
         [SerializeField] private int id;
         [SerializeField] private int password;
         [SerializeField] private int filterNo;
-        [SerializeField] private bool isDisplayed;
+        [SerializeField] private int stateNo;
         [SerializeField] private string registerDateTime;
+        [SerializeField] private string releaseDateTime;
         [SerializeField] private string displayDateTime;
-        [SerializeField] private int studioId;
         [SerializeField] private int textureLength;
     }
 }

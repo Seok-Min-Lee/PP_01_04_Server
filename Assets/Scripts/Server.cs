@@ -268,10 +268,10 @@ public class Server : MonoSingleton<Server>
             id: header.Id,
             password: header.Password,
             filterNo: header.FilterNo,
-            isDisplayed: header.IsDisplayed,
+            stateNo: header.StateNo,
             registerDateTime: header.RegisterDateTime,
+            releaseDateTime: header.ReleaseDateTime,
             displayDateTime: header.DisplayDateTime,
-            studioId: header.StudioId,
             textureRaw: textureBytes
         );
 
