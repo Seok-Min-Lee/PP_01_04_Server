@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using TMPro;
 using UnityEngine;
@@ -46,10 +47,12 @@ public class Ctrl_Main : MonoBehaviour
     private void AddSampleData()
     {
         int pw = UnityEngine.Random.Range(0, 10000);
-        for (int i = 0; i < 9; i++)
+        string[] pathes = Directory.GetFiles($"{Application.streamingAssetsPath}/samples", "*.jpg");
+
+        for (int i = 0; i < pathes.Length; i++)
         {
             int password = pw + i;
-            byte[] texture = System.IO.File.ReadAllBytes("C:/Users/dltjr/Desktop/»õ Æú´õ (2)/" + (i + 1) + ".jpeg");
+            byte[] texture = System.IO.File.ReadAllBytes(pathes[i]);
 
             DatabaseManager.instance.TryAddStudioData(
                 password: password,
