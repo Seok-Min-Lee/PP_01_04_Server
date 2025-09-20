@@ -36,7 +36,7 @@ public class EditorView : DataView<EditorDataSummary, EditorDataSummaryUI>
 
         if (DatabaseManager.instance.TryUpdateEditorDataBulk(tuples, out string sResult))
         {
-            Server.Instance.RequestRequestGetEditorData(tuples.Select(tuple => tuple.Item1));
+            Server.Instance.SendRequsetGetUndisplayedIdList();
         }
     }
 }

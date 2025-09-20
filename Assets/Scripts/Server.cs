@@ -282,6 +282,12 @@ public class Server : MonoSingleton<Server>
             server.Send(connectionId, ms.ToArray());
         }
 
+        // Request Gallery
+        if (result)
+        {
+            SendRequsetGetUndisplayedIdList();
+        }
+
         Debug.Log($"Response Add Editor Data::{connectionId}::{result}/{sResult}");
     }
     private void ResponseGetUndisplayedIdList(int connectionId, ref byte[] message)
@@ -352,18 +358,12 @@ public class Server : MonoSingleton<Server>
 
         Debug.Log($"Response Update Display State::{connectionId}::{id}::{result}/{sResult}");
     }
-    public void RequestRequestGetEditorData(IEnumerable<int> ids)
+    public void SendRequsetGetUndisplayedIdList()
     {
         using (MemoryStream ms = new MemoryStream())
         using (BinaryWriter bw = new BinaryWriter(ms))
         {
-            bw.Write(ConstantValues.CMD_RESPONSE_GET_UNDISPLAYED_ID_LIST); 
-            bw.Write(ids.Count());
-
-            for (int i = 0; i < ids.Count(); i++)
-            {
-                bw.Write(ids.ElementAt(i));
-            }
+            bw.Write(ConstantValues.CMD_SEND_REQUEST_GET_UNDISPLAYED_ID_LIST);
 
             //
             List<int> galleries = connectionIdMonitorIdDictionary.Where(kvp => kvp.Value == 2).Select(kvp => kvp.Key).ToList();
@@ -372,6 +372,8 @@ public class Server : MonoSingleton<Server>
             {
                 server.Send(galleries[i], ms.ToArray());
             }
+
+            Debug.Log($"Send Request Get Undisplayed Id List::{string.Join(", ", galleries)}");
         }
     }
     private int GetAvailablePassword()
