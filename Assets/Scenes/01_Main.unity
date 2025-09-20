@@ -205,9 +205,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1585535849}
-        m_TargetAssemblyTypeName: Ctrl_Main, Assembly-CSharp
-        m_MethodName: OnClickRemoveStudio
+      - m_Target: {fileID: 2129054797}
+        m_TargetAssemblyTypeName: StudioView, Assembly-CSharp
+        m_MethodName: OnClickRemove
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -1546,6 +1546,7 @@ GameObject:
   - component: {fileID: 1090947955}
   - component: {fileID: 1090947954}
   - component: {fileID: 1090947953}
+  - component: {fileID: 1090947956}
   m_Layer: 5
   m_Name: Editor View
   m_TagString: Untagged
@@ -1638,6 +1639,20 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &1090947956
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1090947951}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc761b50e079daa45af2bbe7e2ce88c0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  tableTransform: {fileID: 395730801}
+  prefab: {fileID: 1564210308224720282, guid: 92fc22dd9b6b78d439498fbde81cb387, type: 3}
 --- !u!1 &1168456090
 GameObject:
   m_ObjectHideFlags: 0
@@ -1960,8 +1975,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1585535849}
-        m_TargetAssemblyTypeName: Ctrl_Main, Assembly-CSharp
+      - m_Target: {fileID: 1090947956}
+        m_TargetAssemblyTypeName: EditorView, Assembly-CSharp
         m_MethodName: OnClickRemove
         m_Mode: 1
         m_Arguments:
@@ -2388,10 +2403,8 @@ MonoBehaviour:
   - {fileID: 5859826482555517816}
   - {fileID: 1689704721}
   - {fileID: 356774962}
-  studioDataTable: {fileID: 1832306150}
-  studioDataSummaryUIPrefab: {fileID: 2654905756580519944, guid: 42276c9a82990dc48906054a543718ee, type: 3}
-  editorDataTable: {fileID: 395730801}
-  editorDataSummaryUIPrefab: {fileID: 1564210308224720282, guid: 92fc22dd9b6b78d439498fbde81cb387, type: 3}
+  studioView: {fileID: 2129054797}
+  editorView: {fileID: 1090947956}
 --- !u!4 &1585535850
 Transform:
   m_ObjectHideFlags: 0
@@ -3020,13 +3033,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Navigation:
-    m_Mode: 0
+    m_Mode: 3
     m_WrapAround: 0
     m_SelectOnUp: {fileID: 0}
     m_SelectOnDown: {fileID: 0}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 0}
-  m_Transition: 0
+  m_Transition: 1
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
     m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
@@ -3051,8 +3064,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1585535849}
-        m_TargetAssemblyTypeName: Ctrl_Main, Assembly-CSharp
+      - m_Target: {fileID: 1090947956}
+        m_TargetAssemblyTypeName: EditorView, Assembly-CSharp
         m_MethodName: OnClickAgain
         m_Mode: 1
         m_Arguments:
@@ -3381,6 +3394,7 @@ GameObject:
   - component: {fileID: 2129054796}
   - component: {fileID: 2129054795}
   - component: {fileID: 2129054794}
+  - component: {fileID: 2129054797}
   m_Layer: 5
   m_Name: Studio View
   m_TagString: Untagged
@@ -3473,6 +3487,20 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &2129054797
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2129054792}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f93576baf636ebb4bb7d6d8610da67f5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  tableTransform: {fileID: 1832306150}
+  prefab: {fileID: 2654905756580519944, guid: 42276c9a82990dc48906054a543718ee, type: 3}
 --- !u!1 &2135325938
 GameObject:
   m_ObjectHideFlags: 0
@@ -5094,9 +5122,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1585535849}
-        m_TargetAssemblyTypeName: Ctrl_Main, Assembly-CSharp
-        m_MethodName: OnClickSelectAllStudio
+      - m_Target: {fileID: 2129054797}
+        m_TargetAssemblyTypeName: DataView`2[[StudioDataSummary, Assembly-CSharp
+        m_MethodName: OnClickSelectAll
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -5718,9 +5746,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1585535849}
-        m_TargetAssemblyTypeName: Ctrl_Main, Assembly-CSharp
-        m_MethodName: OnClickSelectAllEditor
+      - m_Target: {fileID: 1090947956}
+        m_TargetAssemblyTypeName: DataView`2[[EditorDataSummary, Assembly-CSharp
+        m_MethodName: OnClickSelectAll
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

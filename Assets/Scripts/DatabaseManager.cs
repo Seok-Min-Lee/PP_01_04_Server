@@ -125,7 +125,7 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
                     //
                     editorDataSummaryDic[raw.Id].SetReleaseDateTime(datetime);
-                    ctrl.RefreshEditorDataSummaryUI(editorDataSummaryDic.Values);
+                    ctrl.RefreshEditorView(editorDataSummaryDic.Values);
                 }
             }
 
@@ -167,7 +167,7 @@ public class DatabaseManager : Singleton<DatabaseManager>
                     studioDataSummaryDic.Add(summary.password, summary);
 
                     //
-                    ctrl.RefreshStudioDataSummaryUI(studioDataSummaryDic.Values);
+                    ctrl.RefreshStudioView(studioDataSummaryDic.Values);
                 }
 
                 conn.Close();
@@ -223,7 +223,7 @@ public class DatabaseManager : Singleton<DatabaseManager>
                     );
                     editorDataSummaryDic.Add(summary.id, summary);
 
-                    ctrl.RefreshEditorDataSummaryUI(editorDataSummaryDic.Values);
+                    ctrl.RefreshEditorView(editorDataSummaryDic.Values);
                 }
 
                 conn.Close();
@@ -261,7 +261,7 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
                     //
                     editorDataSummaryDic[id].SetDisplayDateTime(displayeDatetime);
-                    ctrl.RefreshEditorDataSummaryUI(editorDataSummaryDic.Values);
+                    ctrl.RefreshEditorView(editorDataSummaryDic.Values);
                 }
 
                 conn.Close();
@@ -322,7 +322,7 @@ public class DatabaseManager : Singleton<DatabaseManager>
                         studioDataSummaryDic.Remove(password);
                         passwordDictionary.Remove(password);
                     }
-                    ctrl.RefreshStudioDataSummaryUI(studioDataSummaryDic.Values);
+                    ctrl.RefreshStudioView(studioDataSummaryDic.Values);
                     Debug.Log("[DBManager] Refresh Field & UI");
                 }
 
@@ -386,7 +386,7 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
                         editorDataSummaryDic.Remove(tuple.Item1);
                     }
-                    ctrl.RefreshEditorDataSummaryUI(editorDataSummaryDic.Values);
+                    ctrl.RefreshEditorView(editorDataSummaryDic.Values);
                     Debug.Log("[DBManager] Refresh Field & UI");
                 }
 
@@ -446,7 +446,7 @@ public class DatabaseManager : Singleton<DatabaseManager>
                     editorDataSummaryDic[tuple.Item1].SetReleaseDateTime("-");
                     editorDataSummaryDic[tuple.Item1].SetDisplayDateTime("-");
                 }
-                ctrl.RefreshEditorDataSummaryUI(editorDataSummaryDic.Values);
+                ctrl.RefreshEditorView(editorDataSummaryDic.Values);
                 Debug.Log("[DBManager] Refresh Field & UI");
 
                 conn.Close();

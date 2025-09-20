@@ -58,7 +58,7 @@ public class Server : MonoSingleton<Server>
         Debug.Log($"{connectionId} Disconnected");
 
         int monitorId = connectionIdMonitorIdDictionary[connectionId];
-        ctrl.RefreshDeviceMonitorLocal(monitorId, false);
+        ctrl.RefreshDeviceMonitor(monitorId, false);
 
         connectionIdMonitorIdDictionary.Remove(connectionId);
     }
@@ -125,7 +125,7 @@ public class Server : MonoSingleton<Server>
         if (!connectionIdMonitorIdDictionary.ContainsKey(connectionId))
         {
             connectionIdMonitorIdDictionary.Add(connectionId, monitorId);
-            ctrl.RefreshDeviceMonitorLocal(monitorId, true);
+            ctrl.RefreshDeviceMonitor(monitorId, true);
 
             result = true;
         }
