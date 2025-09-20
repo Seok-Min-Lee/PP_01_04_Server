@@ -104,8 +104,8 @@ public class Server : MonoSingleton<Server>
             case ConstantValues.CMD_REQUEST_CONNECT_GALLERY:
                 ResponseDeviceConnectResult(connectionId, 2);
                 break;
-            case ConstantValues.CMD_REQUEST_GET_UNDISPLAYED_COUNT:
-                ResponseGetUndisplayedCount(connectionId, ref messageBytes);
+            case ConstantValues.CMD_REQUEST_GET_UNDISPLAYED_ID_LIST:
+                ResponseGetUndisplayedIdList(connectionId, ref messageBytes);
                 break;
             case ConstantValues.CMD_REQUEST_GET_EDITOR_DATA:
                 ResponseGetEditorData(connectionId, ref messageBytes);
@@ -157,17 +157,6 @@ public class Server : MonoSingleton<Server>
             server.Send(connectionId, ms.ToArray());
         }
 
-        //byte[] messages = new byte[8];
-
-        //int command = ConstantValues.CMD_RESPONSE_GET_PASSWORD;
-        //byte[] commandBytes = BitConverter.GetBytes(command);
-        //Buffer.BlockCopy(commandBytes, 0, messages, 0, 4);
-
-        //int password = GetAvailablePassword();
-        //byte[] passwordBytes = BitConverter.GetBytes(password);
-        //Buffer.BlockCopy(passwordBytes, 0, messages, 4, 4);
-
-        //server.Send(connectionId, messages);
         Debug.Log($"Response Get Password::{connectionId}::{password}");
     }
     private void ResponseAddStudioData(int connectionId, ref byte[] message)
@@ -295,34 +284,47 @@ public class Server : MonoSingleton<Server>
 
         Debug.Log($"Response Add Editor Data::{connectionId}::{result}/{sResult}");
     }
-    private void ResponseGetUndisplayedCount(int connectionId, ref byte[] message)
+    private void ResponseGetUndisplayedIdList(int connectionId, ref byte[] message)
     {
-        int count = DatabaseManager.instance.GetUnDisplayedCount();
+        List<int> ids = DatabaseManager.instance.GetUnDisplayedIdList();
 
         // Response Client
         using (MemoryStream ms = new MemoryStream())
         using (BinaryWriter bw = new BinaryWriter(ms))
         {
-            bw.Write(ConstantValues.CMD_RESPONSE_GET_UNDISPLAYED_COUNT);
-            bw.Write(count);
+            bw.Write(ConstantValues.CMD_RESPONSE_GET_UNDISPLAYED_ID_LIST);
+            bw.Write(ids.Count);
+
+            for (int i = 0; i < ids.Count; i++)
+            {
+                bw.Write(ids[i]);
+            }
 
             server.Send(connectionId, ms.ToArray());
         }
 
-        Debug.Log($"Response Get Undisplayed Count::{connectionId}::{count}");
+        Debug.Log($"Response Get Undisplayed Count::{connectionId}::{ids.Count}");
     }
     private void ResponseGetEditorData(int connectionId, ref byte[] message)
     {
-        EditorDataRaw edr = DatabaseManager.instance.GetEditorDataRaw();
+        // Receive Data
+        byte[] idBytes = new byte[4];
+        Buffer.BlockCopy(message, 4, idBytes, 0, 4);
+        int id = BitConverter.ToInt32(idBytes);
 
-        // Response Client
-        using (MemoryStream ms = new MemoryStream())
-        using (BinaryWriter bw = new BinaryWriter(ms))
+        EditorDataRaw edr = DatabaseManager.instance.GetEditorDataRaw(id);
+
+        if (edr != null)
         {
-            bw.Write(ConstantValues.CMD_RESPONSE_GET_EDITOR_DATA);
-            bw.Write(edr.ToBytes());
+            // Response Client
+            using (MemoryStream ms = new MemoryStream())
+            using (BinaryWriter bw = new BinaryWriter(ms))
+            {
+                bw.Write(ConstantValues.CMD_RESPONSE_GET_EDITOR_DATA);
+                bw.Write(edr.ToBytes());
 
-            server.Send(connectionId, ms.ToArray());
+                server.Send(connectionId, ms.ToArray());
+            }
         }
 
         Debug.Log($"Response Get Editor Data::{connectionId}::{edr}");
@@ -350,7 +352,28 @@ public class Server : MonoSingleton<Server>
 
         Debug.Log($"Response Update Display State::{connectionId}::{id}::{result}/{sResult}");
     }
+    public void RequestRequestGetEditorData(IEnumerable<int> ids)
+    {
+        using (MemoryStream ms = new MemoryStream())
+        using (BinaryWriter bw = new BinaryWriter(ms))
+        {
+            bw.Write(ConstantValues.CMD_RESPONSE_GET_UNDISPLAYED_ID_LIST); 
+            bw.Write(ids.Count());
 
+            for (int i = 0; i < ids.Count(); i++)
+            {
+                bw.Write(ids.ElementAt(i));
+            }
+
+            //
+            List<int> galleries = connectionIdMonitorIdDictionary.Where(kvp => kvp.Value == 2).Select(kvp => kvp.Key).ToList();
+
+            for (int i = 0; i < galleries.Count; i++)
+            {
+                server.Send(galleries[i], ms.ToArray());
+            }
+        }
+    }
     private int GetAvailablePassword()
     {
         int password;

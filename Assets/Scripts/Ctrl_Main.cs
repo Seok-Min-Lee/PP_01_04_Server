@@ -1,6 +1,8 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
 using UnityEngine;
 
 public class Ctrl_Main : MonoBehaviour
@@ -39,6 +41,78 @@ public class Ctrl_Main : MonoBehaviour
             DatabaseManager.instance.InitData();
             RefreshStudioDataView(DatabaseManager.instance.StudioDataDictionary.Values);
             RefreshEditorDataView(DatabaseManager.instance.EditorDataDictionary.Values);
+        }
+    }
+    public void OnClickSelectAllStudio()
+    {
+        bool isSelectedAll = !studioDataViews.Any(view => view.gameObject.activeSelf && !view.IsSelected);
+
+        for (int i = 0; i < studioDataViews.Count; i++)
+        {
+            if (studioDataViews[i].gameObject.activeSelf)
+            {
+                studioDataViews[i].SetSelected(!isSelectedAll);
+            }
+        }
+    }
+    public void OnClickSelectAllEditor()
+    {
+        bool isSelectedAll = !editorDataViews.Any(view => view.gameObject.activeSelf && !view.IsSelected);
+
+        for (int i = 0; i < editorDataViews.Count; i++)
+        {
+            if (editorDataViews[i].gameObject.activeSelf)
+            {
+                editorDataViews[i].SetSelected(!isSelectedAll);
+            }
+        }
+    }
+    public void OnClickRemoveStudio()
+    {
+        List<int> list = new List<int>();
+
+        for (int i = 0; i < studioDataViews.Count; i++)
+        {
+            if (studioDataViews[i].gameObject.activeSelf &&
+                studioDataViews[i].IsSelected)
+            {
+                list.Add(studioDataViews[i].data.password);
+            }
+        }
+
+        DatabaseManager.instance.TryDeleteStudioDataBulk(list, out string sResult);
+    }
+    public void OnClickRemove()
+    {
+        List<Tuple<int, int>> tuples = new List<Tuple<int, int>>();
+
+        for (int i = 0; i < editorDataViews.Count; i++)
+        {
+            if (editorDataViews[i].gameObject.activeSelf &&
+                editorDataViews[i].IsSelected)
+            {
+                tuples.Add(new Tuple<int, int>(editorDataViews[i].data.id, editorDataViews[i].data.password));
+            }
+        }
+
+        DatabaseManager.instance.TryDeleteEditorDataBulk(tuples, out string sResult);
+    }
+    public void OnClickAgain()
+    {
+        List<Tuple<int, int>> tuples = new List<Tuple<int, int>>();
+
+        for (int i = 0; i < editorDataViews.Count; i++)
+        {
+            if (editorDataViews[i].gameObject.activeSelf &&
+                editorDataViews[i].IsSelected)
+            {
+                tuples.Add(new Tuple<int, int>(editorDataViews[i].data.id, editorDataViews[i].data.password));
+            }
+        }
+
+        if (DatabaseManager.instance.TryUpdateEditorDataBulk(tuples, out string sResult))
+        {
+            Server.Instance.RequestRequestGetEditorData(tuples.Select(tuple => tuple.Item1));
         }
     }
     public void RefreshDeviceMonitorLocal(int index, bool value)
@@ -105,7 +179,7 @@ public class Ctrl_Main : MonoBehaviour
     }
     private void AddSampleData()
     {
-        int pw = Random.Range(0, 10000);
+        int pw = UnityEngine.Random.Range(0, 10000);
         for (int i = 0; i < 9; i++)
         {
             int password = pw + i;

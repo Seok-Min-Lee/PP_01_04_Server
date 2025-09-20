@@ -16,8 +16,8 @@ public static class ConstantValues
     public const int CMD_REQUEST_ADD_EDITOR_DATA = 2004;
     public const int CMD_RESPONSE_ADD_EDITOR_DATA = 2005;
 
-    public const int CMD_REQUEST_GET_UNDISPLAYED_COUNT = 3000;
-    public const int CMD_RESPONSE_GET_UNDISPLAYED_COUNT = 3001;
+    public const int CMD_REQUEST_GET_UNDISPLAYED_ID_LIST = 3000;
+    public const int CMD_RESPONSE_GET_UNDISPLAYED_ID_LIST = 3001;
     public const int CMD_REQUEST_GET_EDITOR_DATA = 3002;
     public const int CMD_RESPONSE_GET_EDITOR_DATA = 3003;
     public const int CMD_REQUEST_UPDATE_DISPLAY_STATE = 3004;

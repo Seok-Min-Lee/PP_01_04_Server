@@ -67,7 +67,7 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
         return studioDataRaw;
     }
-    public EditorDataRaw GetEditorDataRaw()
+    public EditorDataRaw GetEditorDataRaw(int id)
     {
         EditorDataRaw raw = null;
 
@@ -78,13 +78,13 @@ public class DatabaseManager : Singleton<DatabaseManager>
             // Get Data
             using (IDbCommand cmd = conn.CreateCommand())
             {
-                cmd.CommandText = $"SELECT * FROM TB_EDITOR WHERE stateNo = 0 ORDER BY id ASC LIMIT 1";
+                cmd.CommandText = $"SELECT * FROM TB_EDITOR WHERE id = {id} AND stateNo = {(int)EditorDataRaw.State.Registered}";
 
                 using (IDataReader reader = cmd.ExecuteReader())
                 {
                     if (reader.Read())
                     {
-                        int id = reader.GetInt32(0);
+                        //int id = reader.GetInt32(0);
                         int password = reader.GetInt32(1);
                         int filterNo = reader.GetInt32(2);
                         int stateNo = reader.GetInt32(3);
@@ -134,44 +134,6 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
         return raw;
     }
-    public bool TryUpdateDisplayState(int id, out string sResult)
-    {
-        try
-        {
-            using (conn = new SqliteConnection(connectionStr))
-            {
-                conn.Open();
-
-                string query = "UPDATE TB_EDITOR SET stateNo = @stateNo, display_datetime = @display_datetime WHERE id = @id";
-
-                using (SqliteCommand cmd = new SqliteCommand(query, conn))
-                {
-                    int stateNo = (int)EditorDataRaw.State.Displayed;
-                    string displayeDatetime = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-
-                    cmd.Parameters.AddWithValue("@stateNo", stateNo);
-                    cmd.Parameters.AddWithValue("@display_datetime", displayeDatetime);
-                    cmd.Parameters.AddWithValue("@id", id);
-
-                    cmd.ExecuteNonQuery();
-
-                    //
-                    editorDataDictionary[id].SetDisplayDateTime(displayeDatetime);
-                    ctrl.RefreshEditorDataView(editorDataDictionary.Values);
-                }
-
-                conn.Close();
-            }
-        }
-        catch (Exception e)
-        {
-            sResult = e.Message;
-            return false;
-        }
-
-        sResult = string.Empty;
-        return true;
-    }
     public bool TryAddStudioData(int password, byte[] texture, out string sResult)
     {
         try
@@ -202,7 +164,7 @@ public class DatabaseManager : Singleton<DatabaseManager>
                         password: password, 
                         registerDateTime: datetime
                     );
-                    studioDataDictionary.Add(data.index, data);
+                    studioDataDictionary.Add(data.password, data);
 
                     //
                     ctrl.RefreshStudioDataView(studioDataDictionary.Values);
@@ -276,10 +238,232 @@ public class DatabaseManager : Singleton<DatabaseManager>
         sResult = string.Empty;
         return true;
     }
-    public int GetUnDisplayedCount()
+    public bool TryUpdateDisplayState(int id, out string sResult)
     {
-        // 이걸 db에서 처리하는게 적절한가?
-        int count = 0;
+        try
+        {
+            using (conn = new SqliteConnection(connectionStr))
+            {
+                conn.Open();
+
+                string query = "UPDATE TB_EDITOR SET stateNo = @stateNo, display_datetime = @display_datetime WHERE id = @id";
+
+                using (SqliteCommand cmd = new SqliteCommand(query, conn))
+                {
+                    int stateNo = (int)EditorDataRaw.State.Displayed;
+                    string displayeDatetime = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+                    cmd.Parameters.AddWithValue("@stateNo", stateNo);
+                    cmd.Parameters.AddWithValue("@display_datetime", displayeDatetime);
+                    cmd.Parameters.AddWithValue("@id", id);
+
+                    cmd.ExecuteNonQuery();
+
+                    //
+                    editorDataDictionary[id].SetDisplayDateTime(displayeDatetime);
+                    ctrl.RefreshEditorDataView(editorDataDictionary.Values);
+                }
+
+                conn.Close();
+            }
+        }
+        catch (Exception e)
+        {
+            sResult = e.Message;
+            return false;
+        }
+
+        sResult = string.Empty;
+        return true;
+    }
+    public bool TryDeleteStudioDataBulk(IEnumerable<int> passwords, out string sResult)
+    {
+        try
+        {
+            using (conn = new SqliteConnection(connectionStr))
+            {
+                conn.Open();
+
+                using (SqliteTransaction transaction = conn.BeginTransaction())
+                using (SqliteCommand cmd = new SqliteCommand(conn))
+                {
+                    cmd.Transaction = transaction;
+
+                    List<string> parts = new List<string>();
+
+                    for (int i = 0; i < passwords.Count(); i++)
+                    {
+                        int password = passwords.ElementAt(i);
+
+                        string _pw = $"@pw_{i}";
+                        parts.Add(_pw);
+
+                        cmd.Parameters.AddWithValue(_pw, password);
+                    }
+
+                    cmd.CommandText = $"DELETE FROM TB_STUDIO WHERE password IN ({string.Join(", ", parts)})";
+
+                    int count = cmd.ExecuteNonQuery();
+                    transaction.Commit();
+
+                    Debug.Log($"[DBManager] Delete Studio Data Count={count}");
+                }
+
+                // VACUUM & Refresh
+                using (SqliteCommand cmd = new SqliteCommand("VACUUM;", conn))
+                {
+                    cmd.ExecuteNonQuery();
+                    Debug.Log("[DBManager] VACUUM Complete");
+
+                    for (int i = 0; i < passwords.Count(); i++)
+                    {
+                        int password = passwords.ElementAt(i);
+
+                        studioDataDictionary.Remove(password);
+                        passwordDictionary.Remove(password);
+                    }
+                    ctrl.RefreshStudioDataView(studioDataDictionary.Values);
+                    Debug.Log("[DBManager] Refresh Field & UI");
+                }
+
+                conn.Close();
+            }
+        }
+        catch (Exception e)
+        {
+            sResult = e.Message;
+            return false;
+        }
+
+        sResult = string.Empty;
+        return true;
+    }
+    public bool TryDeleteEditorDataBulk(IEnumerable<Tuple<int, int>> tuples, out string sResult)
+    {
+        try
+        {
+            using (conn = new SqliteConnection(connectionStr))
+            {
+                conn.Open();
+
+                using (SqliteTransaction transaction = conn.BeginTransaction())
+                using (SqliteCommand cmd = new SqliteCommand(conn))
+                {
+                    cmd.Transaction = transaction;
+
+                    List<string> parts = new List<string>();
+
+                    for (int i = 0; i < tuples.Count(); i++)
+                    {
+                        Tuple<int, int> tuple = tuples.ElementAt(i);
+
+                        string _id = $"@id_{i}";
+                        string _pw = $"@pw_{i}";
+
+                        parts.Add($"(id = {_id} AND password = {_pw})");
+
+                        cmd.Parameters.AddWithValue(_id, tuple.Item1);
+                        cmd.Parameters.AddWithValue(_pw, tuple.Item2);
+                    }
+
+                    cmd.CommandText = $"DELETE FROM TB_EDITOR WHERE {string.Join(" OR ", parts)}";
+
+                    int count = cmd.ExecuteNonQuery();
+                    transaction.Commit();
+
+                    Debug.Log($"[DBManager] Delete Editor Data Count={count}");
+                }
+
+                // VACUUM & Refresh
+                using (SqliteCommand cmd = new SqliteCommand("VACUUM;", conn))
+                {
+                    cmd.ExecuteNonQuery();
+                    Debug.Log("[DBManager] VACUUM Complete");
+
+                    for (int i = 0; i < tuples.Count(); i++)
+                    {
+                        Tuple<int, int> tuple = tuples.ElementAt(i);
+
+                        editorDataDictionary.Remove(tuple.Item1);
+                    }
+                    ctrl.RefreshEditorDataView(editorDataDictionary.Values);
+                    Debug.Log("[DBManager] Refresh Field & UI");
+                }
+
+                    conn.Close();
+            }
+        }
+        catch (Exception e)
+        {
+            sResult = e.Message;
+            return false;
+        }
+
+        sResult = string.Empty;
+        return true;
+    }
+    public bool TryUpdateEditorDataBulk(IEnumerable<Tuple<int, int>> tuples, out string sResult)
+    {
+        try
+        {
+            using (conn = new SqliteConnection(connectionStr))
+            {
+                conn.Open();
+
+                using (SqliteTransaction transaction = conn.BeginTransaction())
+                using (SqliteCommand cmd = new SqliteCommand(conn))
+                {
+                    cmd.Transaction = transaction;
+
+                    List<string> parts = new List<string>();
+
+                    for (int i = 0; i < tuples.Count(); i++)
+                    {
+                        Tuple<int, int> tuple = tuples.ElementAt(i);
+
+                        string _id = $"@id_{i}";
+                        string _pw = $"@pw_{i}";
+
+                        parts.Add($"(id = {_id} AND password = {_pw})");
+
+                        cmd.Parameters.AddWithValue(_id, tuple.Item1);
+                        cmd.Parameters.AddWithValue(_pw, tuple.Item2);
+                    }
+
+                    cmd.CommandText = $"UPDATE TB_EDITOR SET stateNo = {(int)EditorDataRaw.State.Registered}, release_datetime = '-', display_datetime = '-'  WHERE {string.Join(" OR ", parts)}";
+
+                    int count = cmd.ExecuteNonQuery();
+                    transaction.Commit();
+
+                    Debug.Log($"[DBManager] Update Editor Data Count={count}");
+                }
+
+                // Refresh
+                for (int i = 0; i < tuples.Count(); i++)
+                {
+                    Tuple<int, int> tuple = tuples.ElementAt(i);
+
+                    editorDataDictionary[tuple.Item1].SetReleaseDateTime("-");
+                    editorDataDictionary[tuple.Item1].SetDisplayDateTime("-");
+                }
+                ctrl.RefreshEditorDataView(editorDataDictionary.Values);
+                Debug.Log("[DBManager] Refresh Field & UI");
+
+                conn.Close();
+            }
+        }
+        catch (Exception e)
+        {
+            sResult = e.Message;
+            return false;
+        }
+
+        sResult = string.Empty;
+        return true;
+    }
+    public List<int> GetUnDisplayedIdList()
+    {
+        List<int> ids = new List<int>();
 
         using (conn = new SqliteConnection(connectionStr))
         {
@@ -287,13 +471,13 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
             using (IDbCommand cmd = conn.CreateCommand())
             {
-                cmd.CommandText = $"SELECT count(id) FROM TB_EDITOR WHERE stateNo = {(int)EditorDataRaw.State.Registered}";
+                cmd.CommandText = $"SELECT id FROM TB_EDITOR WHERE stateNo = {(int)EditorDataRaw.State.Registered}";
 
                 using (IDataReader reader = cmd.ExecuteReader())
                 {
-                    if (reader.Read())
+                    while (reader.Read())
                     {
-                        count = reader.GetInt32(0);
+                        ids.Add(reader.GetInt32(0));
                     }
                 }
             }
@@ -301,7 +485,7 @@ public class DatabaseManager : Singleton<DatabaseManager>
             conn.Close();
         }
 
-        return count;
+        return ids;
     }
     private Dictionary<int, StudioData> GetStudioData()
     {
@@ -328,7 +512,7 @@ public class DatabaseManager : Singleton<DatabaseManager>
                             password: password,
                             registerDateTime: registerDateTime
                         );
-                        dictionary.Add(data.index, data);
+                        dictionary.Add(data.password, data);
                     }
                 }
             }
