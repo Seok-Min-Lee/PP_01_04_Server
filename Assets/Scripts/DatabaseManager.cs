@@ -168,6 +168,12 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
                     //
                     ctrl.RefreshStudioView(studioDataSummaryDic.Values);
+
+                    // sample
+                    if (!passwordDictionary.ContainsKey(summary.password))
+                    {
+                        passwordDictionary.Add(summary.password, summary.password);
+                    }
                 }
 
                 conn.Close();
