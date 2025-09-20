@@ -2,9 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class StudioData
+public class StudioDataSummary
 {
-    public StudioData(int index, int password, string registerDateTime)
+    public StudioDataSummary(int index, int password, string registerDateTime)
     {
         this.index = index;
         this.password = password;

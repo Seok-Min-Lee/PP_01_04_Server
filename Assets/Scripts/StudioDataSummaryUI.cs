@@ -4,7 +4,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class StudioDataView : MonoBehaviour
+public class StudioDataSummaryUI : MonoBehaviour
 {
     [SerializeField] private Image checkImage;
 
@@ -14,8 +14,8 @@ public class StudioDataView : MonoBehaviour
 
     public bool IsSelected => isSelected;
     private bool isSelected;
-    public StudioData data { get; private set; }
-    public void Activate(StudioData data)
+    public StudioDataSummary data { get; private set; }
+    public void Activate(StudioDataSummary data)
     {
         this.data = data;
 

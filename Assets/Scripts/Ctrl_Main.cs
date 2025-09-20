@@ -10,12 +10,12 @@ public class Ctrl_Main : MonoBehaviour
     [SerializeField] private DeviceMonitor[] deviceMonitors;
 
     [SerializeField] private Transform studioDataTable;
-    [SerializeField] private StudioDataView studioDataViewPrefab;
-    private List<StudioDataView> studioDataViews = new List<StudioDataView>();
+    [SerializeField] private StudioDataSummaryUI studioDataSummaryUIPrefab;
+    private List<StudioDataSummaryUI> studioDataSummaryUIs = new List<StudioDataSummaryUI>();
 
     [SerializeField] private Transform editorDataTable;
-    [SerializeField] private EditorDataView editorDataViewPrefab;
-    private List<EditorDataView> editorDataViews = new List<EditorDataView>();
+    [SerializeField] private EditorDataSummaryUI editorDataSummaryUIPrefab;
+    private List<EditorDataSummaryUI> editorDataSummaryUIs = new List<EditorDataSummaryUI>();
 
     private void Start()
     {
@@ -26,8 +26,8 @@ public class Ctrl_Main : MonoBehaviour
         deviceMonitors[2].Init("Gallery", "127.0.0.1");
 
         DatabaseManager.instance.InitData();
-        RefreshStudioDataView(DatabaseManager.instance.StudioDataDictionary.Values);
-        RefreshEditorDataView(DatabaseManager.instance.EditorDataDictionary.Values);
+        RefreshStudioDataSummaryUI(DatabaseManager.instance.StudioDataSummaryDic.Values);
+        RefreshEditorDataSummaryUI(DatabaseManager.instance.EditorDataSummaryDic.Values);
     }
     private void Update()
     {
@@ -39,31 +39,31 @@ public class Ctrl_Main : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.S))
         {
             DatabaseManager.instance.InitData();
-            RefreshStudioDataView(DatabaseManager.instance.StudioDataDictionary.Values);
-            RefreshEditorDataView(DatabaseManager.instance.EditorDataDictionary.Values);
+            RefreshStudioDataSummaryUI(DatabaseManager.instance.StudioDataSummaryDic.Values);
+            RefreshEditorDataSummaryUI(DatabaseManager.instance.EditorDataSummaryDic.Values);
         }
     }
     public void OnClickSelectAllStudio()
     {
-        bool isSelectedAll = !studioDataViews.Any(view => view.gameObject.activeSelf && !view.IsSelected);
+        bool isSelectedAll = !studioDataSummaryUIs.Any(x => x.gameObject.activeSelf && !x.IsSelected);
 
-        for (int i = 0; i < studioDataViews.Count; i++)
+        for (int i = 0; i < studioDataSummaryUIs.Count; i++)
         {
-            if (studioDataViews[i].gameObject.activeSelf)
+            if (studioDataSummaryUIs[i].gameObject.activeSelf)
             {
-                studioDataViews[i].SetSelected(!isSelectedAll);
+                studioDataSummaryUIs[i].SetSelected(!isSelectedAll);
             }
         }
     }
     public void OnClickSelectAllEditor()
     {
-        bool isSelectedAll = !editorDataViews.Any(view => view.gameObject.activeSelf && !view.IsSelected);
+        bool isSelectedAll = !editorDataSummaryUIs.Any(x => x.gameObject.activeSelf && !x.IsSelected);
 
-        for (int i = 0; i < editorDataViews.Count; i++)
+        for (int i = 0; i < editorDataSummaryUIs.Count; i++)
         {
-            if (editorDataViews[i].gameObject.activeSelf)
+            if (editorDataSummaryUIs[i].gameObject.activeSelf)
             {
-                editorDataViews[i].SetSelected(!isSelectedAll);
+                editorDataSummaryUIs[i].SetSelected(!isSelectedAll);
             }
         }
     }
@@ -71,12 +71,12 @@ public class Ctrl_Main : MonoBehaviour
     {
         List<int> list = new List<int>();
 
-        for (int i = 0; i < studioDataViews.Count; i++)
+        for (int i = 0; i < studioDataSummaryUIs.Count; i++)
         {
-            if (studioDataViews[i].gameObject.activeSelf &&
-                studioDataViews[i].IsSelected)
+            if (studioDataSummaryUIs[i].gameObject.activeSelf &&
+                studioDataSummaryUIs[i].IsSelected)
             {
-                list.Add(studioDataViews[i].data.password);
+                list.Add(studioDataSummaryUIs[i].data.password);
             }
         }
 
@@ -86,12 +86,12 @@ public class Ctrl_Main : MonoBehaviour
     {
         List<Tuple<int, int>> tuples = new List<Tuple<int, int>>();
 
-        for (int i = 0; i < editorDataViews.Count; i++)
+        for (int i = 0; i < editorDataSummaryUIs.Count; i++)
         {
-            if (editorDataViews[i].gameObject.activeSelf &&
-                editorDataViews[i].IsSelected)
+            if (editorDataSummaryUIs[i].gameObject.activeSelf &&
+                editorDataSummaryUIs[i].IsSelected)
             {
-                tuples.Add(new Tuple<int, int>(editorDataViews[i].data.id, editorDataViews[i].data.password));
+                tuples.Add(new Tuple<int, int>(editorDataSummaryUIs[i].data.id, editorDataSummaryUIs[i].data.password));
             }
         }
 
@@ -101,12 +101,12 @@ public class Ctrl_Main : MonoBehaviour
     {
         List<Tuple<int, int>> tuples = new List<Tuple<int, int>>();
 
-        for (int i = 0; i < editorDataViews.Count; i++)
+        for (int i = 0; i < editorDataSummaryUIs.Count; i++)
         {
-            if (editorDataViews[i].gameObject.activeSelf &&
-                editorDataViews[i].IsSelected)
+            if (editorDataSummaryUIs[i].gameObject.activeSelf &&
+                editorDataSummaryUIs[i].IsSelected)
             {
-                tuples.Add(new Tuple<int, int>(editorDataViews[i].data.id, editorDataViews[i].data.password));
+                tuples.Add(new Tuple<int, int>(editorDataSummaryUIs[i].data.id, editorDataSummaryUIs[i].data.password));
             }
         }
 
@@ -119,62 +119,62 @@ public class Ctrl_Main : MonoBehaviour
     {
         deviceMonitors[index].UpdateConnection(value);
     }
-    public void RefreshStudioDataView(IEnumerable<StudioData> data)
+    public void RefreshStudioDataSummaryUI(IEnumerable<StudioDataSummary> summaries)
     {
         // Prepare Object
-        int size = data.Count();
+        int size = summaries.Count();
 
-        int diff = studioDataViews.Count - size;
+        int diff = studioDataSummaryUIs.Count - size;
         if (diff < 0)
         {
             for (int i = 0; i < -diff; i++)
             {
-                StudioDataView studioDataView = GameObject.Instantiate<StudioDataView>(studioDataViewPrefab, studioDataTable);
-                studioDataViews.Add(studioDataView);
+                StudioDataSummaryUI summaryUI = GameObject.Instantiate<StudioDataSummaryUI>(studioDataSummaryUIPrefab, studioDataTable);
+                studioDataSummaryUIs.Add(summaryUI);
             }
         }
         else
         {
             for (int i = 0; i < diff; i++)
             {
-                studioDataViews[studioDataViews.Count - i - 1].gameObject.SetActive(false);
+                studioDataSummaryUIs[studioDataSummaryUIs.Count - i - 1].gameObject.SetActive(false);
             }
         }
 
         // Init Data
         for (int i = 0; i < size; i++)
         {
-            studioDataViews[i].Activate(data.ElementAt(i));
-            studioDataViews[i].gameObject.SetActive(true);
+            studioDataSummaryUIs[i].Activate(summaries.ElementAt(i));
+            studioDataSummaryUIs[i].gameObject.SetActive(true);
         }
     }
-    public void RefreshEditorDataView(IEnumerable<EditorData> data)
+    public void RefreshEditorDataSummaryUI(IEnumerable<EditorDataSummary> summaries)
     {
         // Prepare Object
-        int size = data.Count();
+        int size = summaries.Count();
 
-        int diff = editorDataViews.Count - size;
+        int diff = editorDataSummaryUIs.Count - size;
         if (diff < 0)
         {
             for (int i = 0; i < -diff; i++)
             {
-                EditorDataView editorDataView = GameObject.Instantiate<EditorDataView>(editorDataViewPrefab, editorDataTable);
-                editorDataViews.Add(editorDataView);
+                EditorDataSummaryUI summaryUI = GameObject.Instantiate<EditorDataSummaryUI>(editorDataSummaryUIPrefab, editorDataTable);
+                editorDataSummaryUIs.Add(summaryUI);
             }
         }
         else
         {
             for (int i = 0; i < diff; i++)
             {
-                editorDataViews[editorDataViews.Count - i - 1].gameObject.SetActive(false);
+                editorDataSummaryUIs[editorDataSummaryUIs.Count - i - 1].gameObject.SetActive(false);
             }
         }
 
         // Init Data
         for (int i = 0; i < size; i++)
         {
-            editorDataViews[i].Activate(data.ElementAt(i));
-            editorDataViews[i].gameObject.SetActive(true);
+            editorDataSummaryUIs[i].Activate(summaries.ElementAt(i));
+            editorDataSummaryUIs[i].gameObject.SetActive(true);
         }
     }
     private void AddSampleData()

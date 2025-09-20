@@ -8,12 +8,12 @@ using UnityEngine;
 
 public class DatabaseManager : Singleton<DatabaseManager>
 {
-    public Dictionary<int, StudioData> StudioDataDictionary => studioDataDictionary;
-    public Dictionary<int, EditorData> EditorDataDictionary => editorDataDictionary;
+    public Dictionary<int, StudioDataSummary> StudioDataSummaryDic => studioDataSummaryDic;
+    public Dictionary<int, EditorDataSummary> EditorDataSummaryDic => editorDataSummaryDic;
     public Dictionary<int, int> PasswordDictionary => passwordDictionary;
-
-    private Dictionary<int, StudioData> studioDataDictionary = new Dictionary<int, StudioData>();
-    private Dictionary<int, EditorData> editorDataDictionary = new Dictionary<int, EditorData>();
+    
+    private Dictionary<int, StudioDataSummary> studioDataSummaryDic = new Dictionary<int, StudioDataSummary>();
+    private Dictionary<int, EditorDataSummary> editorDataSummaryDic = new Dictionary<int, EditorDataSummary>();
     private Dictionary<int, int> passwordDictionary = new Dictionary<int, int>();
 
     private Ctrl_Main ctrl => _ctrl ??= GameObject.Find("Ctrl").GetComponent<Ctrl_Main>();
@@ -27,9 +27,9 @@ public class DatabaseManager : Singleton<DatabaseManager>
     
     public void InitData()
     {
-        editorDataDictionary = GetEditorData();
-        studioDataDictionary = GetStudioData();
-        passwordDictionary = studioDataDictionary.Values.Select(x => x.password).ToDictionary(k => k, v => v);
+        editorDataSummaryDic = GetEditorData();
+        studioDataSummaryDic = GetStudioData();
+        passwordDictionary = studioDataSummaryDic.Values.Select(x => x.password).ToDictionary(k => k, v => v);
     }
     public StudioDataRaw GetStudioDataRaw(int password)
     {
@@ -124,8 +124,8 @@ public class DatabaseManager : Singleton<DatabaseManager>
                     cmd.ExecuteNonQuery();
 
                     //
-                    editorDataDictionary[raw.Id].SetReleaseDateTime(datetime);
-                    ctrl.RefreshEditorDataView(editorDataDictionary.Values);
+                    editorDataSummaryDic[raw.Id].SetReleaseDateTime(datetime);
+                    ctrl.RefreshEditorDataSummaryUI(editorDataSummaryDic.Values);
                 }
             }
 
@@ -159,15 +159,15 @@ public class DatabaseManager : Singleton<DatabaseManager>
                     cmd.ExecuteNonQuery();
 
                     //
-                    StudioData data = new StudioData(
+                    StudioDataSummary summary = new StudioDataSummary(
                         index: studioDataId++, 
                         password: password, 
                         registerDateTime: datetime
                     );
-                    studioDataDictionary.Add(data.password, data);
+                    studioDataSummaryDic.Add(summary.password, summary);
 
                     //
-                    ctrl.RefreshStudioDataView(studioDataDictionary.Values);
+                    ctrl.RefreshStudioDataSummaryUI(studioDataSummaryDic.Values);
                 }
 
                 conn.Close();
@@ -212,8 +212,8 @@ public class DatabaseManager : Singleton<DatabaseManager>
                     cmd.ExecuteNonQuery();
 
                     //
-                    int tempId = editorDataDictionary.Count > 0 ? editorDataDictionary.Keys.Max() + 1 : 1;
-                    EditorData data = new EditorData(
+                    int tempId = editorDataSummaryDic.Count > 0 ? editorDataSummaryDic.Keys.Max() + 1 : 1;
+                    EditorDataSummary summary = new EditorDataSummary(
                         index: editorDataId++, 
                         id: tempId, 
                         password: password, 
@@ -221,9 +221,9 @@ public class DatabaseManager : Singleton<DatabaseManager>
                         releaseDateTime: "-",
                         displayDateTime: "-"
                     );
-                    editorDataDictionary.Add(data.id, data);
+                    editorDataSummaryDic.Add(summary.id, summary);
 
-                    ctrl.RefreshEditorDataView(editorDataDictionary.Values);
+                    ctrl.RefreshEditorDataSummaryUI(editorDataSummaryDic.Values);
                 }
 
                 conn.Close();
@@ -260,8 +260,8 @@ public class DatabaseManager : Singleton<DatabaseManager>
                     cmd.ExecuteNonQuery();
 
                     //
-                    editorDataDictionary[id].SetDisplayDateTime(displayeDatetime);
-                    ctrl.RefreshEditorDataView(editorDataDictionary.Values);
+                    editorDataSummaryDic[id].SetDisplayDateTime(displayeDatetime);
+                    ctrl.RefreshEditorDataSummaryUI(editorDataSummaryDic.Values);
                 }
 
                 conn.Close();
@@ -319,10 +319,10 @@ public class DatabaseManager : Singleton<DatabaseManager>
                     {
                         int password = passwords.ElementAt(i);
 
-                        studioDataDictionary.Remove(password);
+                        studioDataSummaryDic.Remove(password);
                         passwordDictionary.Remove(password);
                     }
-                    ctrl.RefreshStudioDataView(studioDataDictionary.Values);
+                    ctrl.RefreshStudioDataSummaryUI(studioDataSummaryDic.Values);
                     Debug.Log("[DBManager] Refresh Field & UI");
                 }
 
@@ -384,9 +384,9 @@ public class DatabaseManager : Singleton<DatabaseManager>
                     {
                         Tuple<int, int> tuple = tuples.ElementAt(i);
 
-                        editorDataDictionary.Remove(tuple.Item1);
+                        editorDataSummaryDic.Remove(tuple.Item1);
                     }
-                    ctrl.RefreshEditorDataView(editorDataDictionary.Values);
+                    ctrl.RefreshEditorDataSummaryUI(editorDataSummaryDic.Values);
                     Debug.Log("[DBManager] Refresh Field & UI");
                 }
 
@@ -443,10 +443,10 @@ public class DatabaseManager : Singleton<DatabaseManager>
                 {
                     Tuple<int, int> tuple = tuples.ElementAt(i);
 
-                    editorDataDictionary[tuple.Item1].SetReleaseDateTime("-");
-                    editorDataDictionary[tuple.Item1].SetDisplayDateTime("-");
+                    editorDataSummaryDic[tuple.Item1].SetReleaseDateTime("-");
+                    editorDataSummaryDic[tuple.Item1].SetDisplayDateTime("-");
                 }
-                ctrl.RefreshEditorDataView(editorDataDictionary.Values);
+                ctrl.RefreshEditorDataSummaryUI(editorDataSummaryDic.Values);
                 Debug.Log("[DBManager] Refresh Field & UI");
 
                 conn.Close();
@@ -487,11 +487,11 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
         return ids;
     }
-    private Dictionary<int, StudioData> GetStudioData()
+    private Dictionary<int, StudioDataSummary> GetStudioData()
     {
-        Dictionary<int, StudioData> dictionary = new Dictionary<int, StudioData>();
+        Dictionary<int, StudioDataSummary> dictionary = new Dictionary<int, StudioDataSummary>();
 
-        int index = studioDataId;
+        studioDataId = 1;
         using (conn = new SqliteConnection(connectionStr))
         {
             conn.Open();
@@ -507,8 +507,8 @@ public class DatabaseManager : Singleton<DatabaseManager>
                         int password = reader.GetInt32(0);
                         string registerDateTime = reader.GetString(1);
 
-                        StudioData data = new StudioData(
-                            index: index++,
+                        StudioDataSummary data = new StudioDataSummary(
+                            index: studioDataId++,
                             password: password,
                             registerDateTime: registerDateTime
                         );
@@ -520,15 +520,13 @@ public class DatabaseManager : Singleton<DatabaseManager>
             conn.Close();
         }
 
-        studioDataId = index;
-
         return dictionary;
     }
-    private Dictionary<int, EditorData> GetEditorData()
+    private Dictionary<int, EditorDataSummary> GetEditorData()
     {
-        Dictionary<int, EditorData> dictionary = new Dictionary<int, EditorData>();
+        Dictionary<int, EditorDataSummary> dictionary = new Dictionary<int, EditorDataSummary>();
 
-        int index = editorDataId;
+        editorDataId = 1;
 
         using (conn = new SqliteConnection(connectionStr))
         {
@@ -548,8 +546,8 @@ public class DatabaseManager : Singleton<DatabaseManager>
                         string releaseDateTime = reader.GetString(3);
                         string displayDateTime = reader.GetString(4);
 
-                        EditorData data = new EditorData(
-                            index: index++,
+                        EditorDataSummary data = new EditorDataSummary(
+                            index: editorDataId++,
                             id: id,
                             password: password,
                             registerDateTime: registerDateTime,
@@ -563,8 +561,6 @@ public class DatabaseManager : Singleton<DatabaseManager>
 
             conn.Close();
         }
-
-        editorDataId = index;
 
         return dictionary;
     }

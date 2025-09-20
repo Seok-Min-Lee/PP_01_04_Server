@@ -1074,7 +1074,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\uC900\uBE44"
+  m_text: "\uB2E4\uC2DC\n\uBCF4\uB0B4\uAE30"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: a2d39ce1d0621704aba553dc1766c7f2, type: 2}
   m_sharedMaterial: {fileID: -4599913254798865898, guid: a2d39ce1d0621704aba553dc1766c7f2, type: 2}
@@ -2389,9 +2389,9 @@ MonoBehaviour:
   - {fileID: 1689704721}
   - {fileID: 356774962}
   studioDataTable: {fileID: 1832306150}
-  studioDataViewPrefab: {fileID: 2654905756580519944, guid: 42276c9a82990dc48906054a543718ee, type: 3}
+  studioDataSummaryUIPrefab: {fileID: 2654905756580519944, guid: 42276c9a82990dc48906054a543718ee, type: 3}
   editorDataTable: {fileID: 395730801}
-  editorDataViewPrefab: {fileID: 1564210308224720282, guid: 92fc22dd9b6b78d439498fbde81cb387, type: 3}
+  editorDataSummaryUIPrefab: {fileID: 1564210308224720282, guid: 92fc22dd9b6b78d439498fbde81cb387, type: 3}
 --- !u!4 &1585535850
 Transform:
   m_ObjectHideFlags: 0
@@ -4215,7 +4215,7 @@ GameObject:
   - component: {fileID: 2889992459736951683}
   - component: {fileID: 4152964898700103169}
   m_Layer: 5
-  m_Name: Editor Data View
+  m_Name: Editor Data Header
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4445,7 +4445,7 @@ GameObject:
   - component: {fileID: 7539826402824553774}
   - component: {fileID: 885634851919817614}
   m_Layer: 5
-  m_Name: Studio Data View
+  m_Name: Studio Data Header
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

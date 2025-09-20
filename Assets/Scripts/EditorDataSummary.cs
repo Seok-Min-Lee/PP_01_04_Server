@@ -2,9 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class EditorData
+public class EditorDataSummary
 {
-    public EditorData(int index, int id, int password, string registerDateTime, string releaseDateTime, string displayDateTime)
+    public EditorDataSummary(int index, int id, int password, string registerDateTime, string releaseDateTime, string displayDateTime)
     {
         this.index = index;
         this.id = id;
