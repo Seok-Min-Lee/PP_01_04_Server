@@ -20,6 +20,8 @@ public class DataRow<T> : MonoBehaviour where T : class
 
     public virtual void OnClick()
     {
+        AudioManager.Instance.PlaySFX(Sound.Key.Click);
+
         isSelected = !isSelected;
         checkImage.gameObject.SetActive(isSelected);
     }

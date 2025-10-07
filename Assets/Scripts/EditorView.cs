@@ -8,6 +8,8 @@ public class EditorView : DataView<EditorDataSummary, EditorDataSummaryUI>
 {
     public override void OnClickRemove()
     {
+        base.OnClickRemove();
+
         List<Tuple<int, int>> tuples = new List<Tuple<int, int>>();
 
         for (int i = 0; i < rows.Count; i++)
@@ -23,6 +25,8 @@ public class EditorView : DataView<EditorDataSummary, EditorDataSummaryUI>
     }
     public override void OnClickAgain()
     {
+        base.OnClickAgain();
+
         List<Tuple<int, int>> tuples = new List<Tuple<int, int>>();
 
         for (int i = 0; i < rows.Count; i++)

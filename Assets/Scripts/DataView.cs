@@ -42,6 +42,8 @@ public class DataView<T, U> : MonoBehaviour
     }
     public void OnClickSelectAll()
     {
+        AudioManager.Instance.PlaySFX(Sound.Key.Click);
+
         bool isSelectedAll = !rows.Any(x => x.gameObject.activeSelf && !x.IsSelected);
 
         for (int i = 0; i < rows.Count; i++)
@@ -54,10 +56,10 @@ public class DataView<T, U> : MonoBehaviour
     }
     public virtual void OnClickRemove()
     {
-
+        AudioManager.Instance.PlaySFX(Sound.Key.Click);
     }
     public virtual void OnClickAgain()
     {
-
+        AudioManager.Instance.PlaySFX(Sound.Key.Click);
     }
 }

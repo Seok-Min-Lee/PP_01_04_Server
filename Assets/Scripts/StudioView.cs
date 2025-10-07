@@ -6,6 +6,8 @@ public class StudioView : DataView<StudioDataSummary, StudioDataSummaryUI>
 {
     public override void OnClickRemove()
     {
+        base.OnClickRemove();
+
         List<int> list = new List<int>();
 
         for (int i = 0; i < rows.Count; i++)
